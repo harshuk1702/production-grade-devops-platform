@@ -46,7 +46,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag Docker image
-        run: docker tag devops-demo-api:ci ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
+        run: |
+          docker tag devops-demo-api:ci ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
+          docker tag devops-demo-api:ci ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
 
       - name: Push Docker image
-        run: docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
+          docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
