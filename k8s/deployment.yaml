@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-demo-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops-demo-api
+
+  template:
+    metadata:
+      labels:
+        app: devops-demo-api
+
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+
+      containers:
+        - name: devops-demo-api
+          image: ghcr.io/harshuk1702/devops-demo-api:348f46be088ef1ba711f706712abb35b960de0ab
+          ports:
+            - containerPort: 8000
