@@ -30,3 +30,6 @@ jobs:
       - name: Run tests
         working-directory: application
         run: pytest
+
+      - name: Build Docker image
+        run: docker build -t devops-demo-api:ci ./application
