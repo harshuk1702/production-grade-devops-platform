@@ -15,7 +15,24 @@ The application and container foundation are complete.
 - Non-root container execution
 - GitHub repository and version control
 
-The CI/CD, Kubernetes, progressive delivery, and observability components are the next stages of implementation.
+The CI foundation is now implemented and validated. Kubernetes, progressive delivery, and observability are the next stages of implementation.
+
+### CI Validation
+
+GitHub Actions is configured to run automatically on pushes and pull requests targeting the `main` branch.
+
+The CI workflow:
+
+1. Checks out the repository
+2. Sets up Python 3.13
+3. Installs application dependencies
+4. Runs the Pytest test suite
+
+Validation result:
+
+```text
+GitHub Actions CI: Success
+Tests: 4 passed
 
 ---
 
@@ -28,6 +45,12 @@ Developer
     |
     v
 GitHub Repository
+    |
+    v
+GitHub Actions CI
+    |
+    v
+Automated Tests
     |
     v
 FastAPI Application
@@ -222,25 +245,28 @@ The value is based on the locally built Docker image.
 
 ```text
 production-grade-devops-platform/
-|
-+-- application/
-|   |
-|   +-- app/
-|   |   +-- __init__.py
-|   |   +-- main.py
-|   |
-|   +-- tests/
-|   |   +-- __init__.py
-|   |   +-- test_api.py
-|   |
-|   +-- Dockerfile
-|   +-- pytest.ini
-|   +-- requirements.txt
-|
-+-- docs/
-|
-+-- .gitignore
-+-- README.md
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── application/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   └── main.py
+│   │
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   └── test_api.py
+│   │
+│   ├── Dockerfile
+│   ├── pytest.ini
+│   └── requirements.txt
+│
+├── docs/
+│
+├── .gitignore
+└── README.md
 ```
 
 ---
@@ -264,8 +290,8 @@ production-grade-devops-platform/
 
 ### Phase 3 — CI/CD
 
-- [ ] GitHub Actions
-- [ ] Automated test pipeline
+- [x] GitHub Actions
+- [x] Automated test pipeline
 - [ ] Docker image build in CI
 - [ ] Image security scanning
 - [ ] Container registry
