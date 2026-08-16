@@ -38,6 +38,12 @@ jobs:
       - name: Build Docker image
         run: docker build -t devops-demo-api:ci ./application
 
+      - name: Validate Kubernetes manifests
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: /kubeconform
+          args: -summary -strict k8s/deployment.yaml k8s/service.yaml
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -54,8 +60,3 @@ jobs:
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
           docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
-
-      - name: Validate Kubernetes manifests
-        run: |
-          kubectl apply --dry-run=client --validate=false -f k8s/deployment.yaml
-          kubectl apply --dry-run=client --validate=false -f k8s/service.yaml
