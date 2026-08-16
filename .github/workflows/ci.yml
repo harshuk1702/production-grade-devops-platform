@@ -41,6 +41,7 @@ jobs:
       - name: Scan Docker image for vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: v0.74.0
           image-ref: devops-demo-api:ci
           format: table
           severity: CRITICAL,HIGH
