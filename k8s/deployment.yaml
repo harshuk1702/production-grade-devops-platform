@@ -4,6 +4,15 @@ metadata:
   name: devops-demo-api
 spec:
   replicas: 2
+
+  revisionHistoryLimit: 3
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
   selector:
     matchLabels:
       app: devops-demo-api
@@ -14,14 +23,34 @@ spec:
         app: devops-demo-api
 
     spec:
+      terminationGracePeriodSeconds: 30
+
       imagePullSecrets:
         - name: ghcr-secret
 
       containers:
         - name: devops-demo-api
-          image: ghcr.io/harshuk1702/devops-demo-api:348f46be088ef1ba711f706712abb35b960de0ab
+          image: ghcr.io/harshuk1702/devops-demo-api:542ed62cc0dd3855a215a3617b74bf82d379bafc
+
           ports:
             - containerPort: 8000
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
           readinessProbe:
             httpGet:

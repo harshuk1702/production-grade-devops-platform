@@ -8,13 +8,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt \
-    && useradd --create-home --shell /usr/sbin/nologin appuser
+    && groupadd --gid 10001 appuser \
+    && useradd --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin appuser
 
 COPY app ./app
 
-RUN chown -R appuser:appuser /app
+RUN chown -R 10001:10001 /app
 
-USER appuser
+USER 10001
 
 EXPOSE 8000
 
