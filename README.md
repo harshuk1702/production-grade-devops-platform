@@ -1,38 +1,51 @@
 # Production-Grade DevOps Platform
 
-A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, progressive delivery, and observability.
+A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, progressive delivery, and observability.
 
-The platform is being built incrementally. Each stage is implemented, tested, measured, documented, and committed to Git.
+The platform is being built incrementally. Each stage is implemented, tested, validated, documented, and committed to Git.
+
+---
 
 ## Current Status
 
-The application and container foundation are complete.
+The application, containerization, CI/CD, security, and Kubernetes foundations are implemented and validated.
+
+### Implemented
 
 - FastAPI application
-- Automated API tests
+- Automated API tests with Pytest
 - Docker containerization
 - Docker health check
 - Non-root container execution
-- GitHub repository and version control
+- Container security hardening
+- GitHub Actions CI
+- Docker image build in CI
+- Trivy container vulnerability scanning
+- Kubernetes manifest validation
+- GitHub Container Registry publishing
+- Kubernetes Deployment
+- Kubernetes Service
+- RollingUpdate deployment strategy
+- Readiness probe
+- Liveness probe
+- CPU and memory resource requests and limits
+- Kubernetes container security context
 
-The CI foundation is now implemented and validated. Kubernetes, progressive delivery, and observability are the next stages of implementation.
+### Currently Being Built
 
-### CI Validation
+- Application metrics
+- Prometheus
+- Grafana
+- Kubernetes observability
 
-GitHub Actions is configured to run automatically on pushes and pull requests targeting the `main` branch.
+### Planned
 
-The CI workflow:
-
-1. Checks out the repository
-2. Sets up Python 3.13
-3. Installs application dependencies
-4. Runs the Pytest test suite
-
-Validation result:
-
-```text
-GitHub Actions CI: Success
-Tests: 4 passed
+- Canary deployments
+- Traffic management
+- Automated promotion and rollback
+- Centralized logging
+- SLOs and alerting
+- Remote/cloud Kubernetes deployment
 
 ---
 
@@ -44,25 +57,45 @@ Tests: 4 passed
 Developer
     |
     v
-GitHub Repository
+Git Repository
     |
     v
-GitHub Actions CI
+GitHub Actions
     |
-    v
-Automated Tests
-    |
-    v
-FastAPI Application
-    |
-    v
-Docker Container
-    |
-    +---- Port 8000
-    |
-    +---- Health Check
-    |
-    +---- Non-root user
+    +----------------------+
+    |                      |
+    v                      v
+Pytest Tests          Docker Build
+                           |
+                           v
+                    Trivy Security Scan
+                           |
+                           v
+                  Kubernetes Validation
+                           |
+                           v
+                 GitHub Container Registry
+                           |
+                           v
+                     Kubernetes
+                           |
+                    +------+------+
+                    |             |
+                    v             v
+              Deployment      ClusterIP
+              2 replicas       Service
+                    |
+              RollingUpdate
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+    Readiness Probe      Liveness Probe
+          |                   |
+          +---------+---------+
+                    |
+                    v
+              FastAPI API
 ```
 
 ### Target Architecture
@@ -76,41 +109,47 @@ GitHub Repository
     v
 GitHub Actions CI/CD
     |
-    +------------------+
-    |                  |
-    v                  v
-Automated Tests    Docker Build
-                       |
-                       v
-               Container Registry
-                       |
-                       v
-                   Kubernetes
-                       |
-              +--------+--------+
-              |                 |
-              v                 v
-           Stable            Canary
-              |                 |
-              +--------+--------+
-                       |
-                       v
-               Traffic Management
-                       |
-                       v
-                 Observability
-                /      |       \
-               /       |        \
-          Metrics      Logs    Dashboards
-               |
-               v
-        SLO / Health Checks
-               |
-               v
-        Automated Rollback
+    +--------------------+
+    |                    |
+    v                    v
+Automated Tests      Docker Build
+                         |
+                         v
+                  Security Scanning
+                         |
+                         v
+                 Container Registry
+                         |
+                         v
+                    Kubernetes
+                         |
+              +----------+----------+
+              |                     |
+              v                     v
+           Stable                Canary
+              |                     |
+              +----------+----------+
+                         |
+                         v
+                 Traffic Management
+                         |
+                         v
+                   Observability
+                 /       |        \
+                /        |         \
+           Metrics      Logs     Traces
+              |
+              v
+       Prometheus / Grafana
+              |
+              v
+       SLOs / Alerting
+              |
+              v
+      Automated Rollback
 ```
 
-The target architecture represents the planned final state of the platform. Components will be marked as implemented only after they have been deployed and validated.
+The target architecture represents the planned final state of the platform. Components are marked as implemented only after they have been deployed and validated.
 
 ---
 
@@ -118,34 +157,64 @@ The target architecture represents the planned final state of the platform. Comp
 
 ### Application
 
-- Python
+- Python 3.13
 - FastAPI
 - Uvicorn
+- Pydantic
 - Pytest
+- HTTPX
 
 ### Containerization
 
 - Docker
-- Python 3.13 slim
+- Python 3.13 slim base image
 - Docker health checks
-- Non-root container execution
+- Non-root execution
+- Linux package updates
+- Container security hardening
 
-### Planned Platform Components
+### CI/CD
 
 - GitHub Actions
-- Container Registry
+- Automated testing
+- Docker image builds
+- Trivy vulnerability scanning
+- Kubernetes manifest validation
+- GitHub Container Registry
+
+### Kubernetes
+
 - Kubernetes
-- Helm
+- Deployment
+- Service
+- RollingUpdate strategy
+- Readiness probes
+- Liveness probes
+- Resource requests and limits
+- SecurityContext
+- GHCR imagePullSecret
+
+### Planned Observability
+
 - Prometheus
 - Grafana
-- Progressive delivery / Canary deployments
+- Application metrics
+- Kubernetes metrics
+- Centralized logging
+- SLOs and alerting
+
+### Planned Progressive Delivery
+
+- Canary deployments
+- Traffic management
+- Automated promotion
 - Automated rollback
 
 ---
 
 ## Application
 
-The current FastAPI application exposes the following endpoints:
+The FastAPI application exposes the following endpoints:
 
 | Endpoint | Purpose |
 |---|---|
@@ -155,7 +224,7 @@ The current FastAPI application exposes the following endpoints:
 | `GET /api/orders` | Order data |
 | `GET /docs` | Swagger UI |
 
-The API provides automatically generated OpenAPI documentation through the FastAPI Swagger interface.
+FastAPI automatically provides OpenAPI documentation through the Swagger interface.
 
 ---
 
@@ -163,7 +232,7 @@ The API provides automatically generated OpenAPI documentation through the FastA
 
 Automated API tests are implemented using Pytest.
 
-Run the tests:
+Run the tests locally:
 
 ```powershell
 cd application
@@ -171,13 +240,13 @@ cd application
 pytest
 ```
 
-Current validation result:
+Current validation:
 
 ```text
 4 passed
 ```
 
-The test suite currently validates the application's main API behaviour.
+The test suite validates the application's main API behaviour.
 
 ---
 
@@ -189,6 +258,12 @@ The application is packaged as a Docker image.
 
 ```powershell
 docker build -t devops-demo-api:1.2.0 ./application
+```
+
+For CI-style testing:
+
+```powershell
+docker build -t devops-demo-api:ci ./application
 ```
 
 ### Run the Container
@@ -209,35 +284,294 @@ The Docker image includes a health check against:
 /health
 ```
 
-Current validation:
+The container runs as a non-root user with UID `10001`.
 
-```text
-Container status: healthy
-```
-
-The container also runs as a non-root user.
-
-### Verify the Container User
+### Verify Container User
 
 ```powershell
 docker exec devops-demo-api whoami
 ```
 
-Result:
+Expected result:
 
 ```text
 appuser
 ```
 
-### Container Image
+---
 
-The current Docker image was measured locally at approximately:
+## Container Security
+
+The container image is hardened to reduce the attack surface.
+
+The Dockerfile:
+
+- Uses the slim Python base image
+- Updates installed OS packages
+- Installs application dependencies
+- Creates a dedicated non-root user
+- Runs the application as UID `10001`
+- Avoids root execution at runtime
+- Provides a container health check
+
+Kubernetes additionally enforces:
 
 ```text
-56.88 MB
+runAsUser: 10001
+runAsGroup: 10001
+runAsNonRoot: true
+allowPrivilegeEscalation: false
+capabilities:
+  drop:
+    - ALL
 ```
 
-The value is based on the locally built Docker image.
+---
+
+## CI Pipeline
+
+GitHub Actions runs automatically on:
+
+- Pushes to `main`
+- Pull requests targeting `main`
+
+The CI workflow performs the following stages:
+
+```text
+Checkout
+   |
+   v
+Setup Python 3.13
+   |
+   v
+Install Dependencies
+   |
+   v
+Run Pytest
+   |
+   v
+Build Docker Image
+   |
+   v
+Trivy Vulnerability Scan
+   |
+   v
+Validate Kubernetes Manifests
+   |
+   v
+Login to GHCR
+   |
+   v
+Tag Docker Image
+   |
+   v
+Push Docker Images
+```
+
+### CI Validation
+
+The pipeline validates:
+
+- Application tests
+- Docker image build
+- Container vulnerabilities
+- Kubernetes manifests
+- Container registry publishing
+
+The vulnerability scanner is configured to fail the pipeline when unresolved `HIGH` or `CRITICAL` vulnerabilities are detected.
+
+```yaml
+severity: CRITICAL,HIGH
+ignore-unfixed: true
+exit-code: "1"
+```
+
+---
+
+## Container Registry
+
+Docker images are published to GitHub Container Registry.
+
+The image repository follows:
+
+```text
+ghcr.io/<github-owner>/devops-demo-api
+```
+
+The CI pipeline publishes:
+
+```text
+:ci
+:<commit-sha>
+```
+
+The Kubernetes Deployment uses an immutable commit-SHA image reference.
+
+---
+
+## Kubernetes
+
+The application is deployed to Kubernetes using a Deployment and Service.
+
+### Deployment
+
+The Deployment runs:
+
+```text
+2 replicas
+```
+
+The deployment strategy is:
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+```
+
+This ensures that Kubernetes maintains application availability during a rolling update.
+
+### Service
+
+The application is exposed internally through a Kubernetes `ClusterIP` Service.
+
+```text
+Service
+  |
+  v
+devops-demo-api:8000
+  |
+  v
+Application Pods
+```
+
+### Resource Management
+
+Each container requests:
+
+```text
+CPU:    100m
+Memory: 128Mi
+```
+
+and has limits of:
+
+```text
+CPU:    500m
+Memory: 512Mi
+```
+
+### Readiness Probe
+
+The readiness probe checks:
+
+```text
+GET /
+```
+
+A pod must become ready before Kubernetes sends it traffic.
+
+### Liveness Probe
+
+The liveness probe also checks:
+
+```text
+GET /
+```
+
+If the application becomes unhealthy, Kubernetes can restart the container.
+
+---
+
+## Kubernetes Validation
+
+Check the cluster:
+
+```powershell
+kubectl get nodes
+```
+
+Check application pods:
+
+```powershell
+kubectl get pods -l app=devops-demo-api
+```
+
+Check the Deployment:
+
+```powershell
+kubectl get deployment devops-demo-api
+```
+
+Check the Service:
+
+```powershell
+kubectl get service devops-demo-api
+```
+
+Check Deployment details:
+
+```powershell
+kubectl describe deployment devops-demo-api
+```
+
+Check rollout status:
+
+```powershell
+kubectl rollout status deployment/devops-demo-api
+```
+
+Expected deployment state:
+
+```text
+READY       2/2
+UP-TO-DATE  2
+AVAILABLE   2
+```
+
+---
+
+## Rolling Updates
+
+The Kubernetes Deployment uses a rolling update strategy.
+
+The update process is:
+
+```text
+Existing Version
+      |
+      v
+Create New Pod
+      |
+      v
+Readiness Probe
+      |
+      v
+New Pod Becomes Ready
+      |
+      v
+Terminate Old Pod
+      |
+      v
+Repeat
+      |
+      v
+New Version Fully Deployed
+```
+
+The rollout can be inspected using:
+
+```powershell
+kubectl rollout status deployment/devops-demo-api
+```
+
+Deployment history:
+
+```powershell
+kubectl rollout history deployment/devops-demo-api
+```
 
 ---
 
@@ -245,7 +579,7 @@ The value is based on the locally built Docker image.
 
 ```text
 production-grade-devops-platform/
-│
+|
 ├── .github/
 │   └── workflows/
 │       └── ci.yml
@@ -264,6 +598,13 @@ production-grade-devops-platform/
 │   └── requirements.txt
 │
 ├── docs/
+│
+├── k8s/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+├── scripts/
+│   └── deploy.ps1
 │
 ├── .gitignore
 └── README.md
@@ -287,23 +628,28 @@ production-grade-devops-platform/
 - [x] Docker health check
 - [x] Non-root container user
 - [x] Container validation
+- [x] Container security hardening
 
 ### Phase 3 — CI/CD
 
 - [x] GitHub Actions
 - [x] Automated test pipeline
-- [ ] Docker image build in CI
-- [ ] Image security scanning
-- [ ] Container registry
+- [x] Docker image build in CI
+- [x] Container vulnerability scanning
+- [x] Kubernetes manifest validation
+- [x] GitHub Container Registry
+- [x] Commit-SHA image tagging
 
 ### Phase 4 — Kubernetes
 
-- [ ] Kubernetes Deployment
-- [ ] Kubernetes Service
-- [ ] Readiness probe
-- [ ] Liveness probe
-- [ ] ConfigMap / Secrets
-- [ ] Resource requests and limits
+- [x] Kubernetes Deployment
+- [x] Kubernetes Service
+- [x] Readiness probe
+- [x] Liveness probe
+- [x] Resource requests and limits
+- [x] Kubernetes security context
+- [x] RollingUpdate strategy
+- [ ] ConfigMap / application Secrets
 
 ### Phase 5 — Progressive Delivery
 
@@ -319,9 +665,21 @@ production-grade-devops-platform/
 - [ ] Application metrics
 - [ ] Prometheus
 - [ ] Grafana
-- [ ] Centralised logging
-- [ ] Latency and error-rate monitoring
+- [ ] Kubernetes metrics
+- [ ] Centralized logging
+- [ ] Latency monitoring
+- [ ] Error-rate monitoring
 - [ ] SLOs
+- [ ] Alerting
+
+### Phase 7 — Cloud / Remote Kubernetes
+
+- [ ] Remote Kubernetes cluster
+- [ ] Cloud container registry integration
+- [ ] Remote deployment
+- [ ] Production configuration management
+- [ ] External traffic management
+- [ ] Production observability
 
 ---
 
@@ -333,10 +691,44 @@ For each major change:
 
 1. Implement the change
 2. Run automated tests
-3. Validate the deployment behaviour
-4. Measure relevant results
-5. Update the documentation
-6. Commit the change to Git
-7. Push the change to GitHub
+3. Build and validate the container
+4. Validate Kubernetes behaviour
+5. Measure relevant results
+6. Update the documentation
+7. Commit the change to Git
+8. Push the change to GitHub
+9. Verify GitHub Actions
 
-The README and architecture documentation are updated as the implementation evolves.
+This approach keeps each stage reproducible and provides a clear Git history of the platform's evolution.
+
+---
+
+## Current Milestone
+
+The application delivery foundation is complete.
+
+The platform currently demonstrates:
+
+```text
+Application
+    +
+Testing
+    +
+Containerization
+    +
+Container Security
+    +
+CI/CD
+    +
+Vulnerability Scanning
+    +
+Container Registry
+    +
+Kubernetes
+    +
+Rolling Updates
+    +
+Health Checks
+```
+
+The next major milestone is **observability**, beginning with application metrics and Prometheus, followed by Grafana dashboards and Kubernetes-level monitoring.
