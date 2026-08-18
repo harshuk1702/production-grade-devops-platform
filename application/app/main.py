@@ -1,4 +1,8 @@
 from fastapi import FastAPI
+from prometheus_client import Counter, Histogram, make_asgi_app
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
 
 app = FastAPI(
     title="DevOps Demo API",
@@ -9,6 +13,53 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+
+
+REQUEST_COUNT = Counter(
+    "http_requests_total",
+    "Total number of HTTP requests",
+    ["method", "path", "status"],
+)
+
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request latency in seconds",
+    ["method", "path"],
+)
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        import time
+
+        start_time = time.perf_counter()
+
+        response = await call_next(request)
+
+        duration = time.perf_counter() - start_time
+
+        path = request.url.path
+        method = request.method
+        status = str(response.status_code)
+
+        REQUEST_COUNT.labels(
+            method=method,
+            path=path,
+            status=status,
+        ).inc()
+
+        REQUEST_LATENCY.labels(
+            method=method,
+            path=path,
+        ).observe(duration)
+
+        return response
+
+
+app.add_middleware(MetricsMiddleware)
+
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
 
 
 @app.get("/")

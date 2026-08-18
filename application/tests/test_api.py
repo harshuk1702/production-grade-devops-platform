@@ -49,3 +49,14 @@ def test_orders():
 
     assert "orders" in data
     assert len(data["orders"]) == 3
+
+
+def test_metrics():
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+
+    body = response.text
+
+    assert "http_requests_total" in body
+    assert "http_request_duration_seconds" in body
