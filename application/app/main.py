@@ -34,26 +34,32 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
         start_time = time.perf_counter()
 
-        response = await call_next(request)
-
-        duration = time.perf_counter() - start_time
-
         path = request.url.path
         method = request.method
-        status = str(response.status_code)
 
-        REQUEST_COUNT.labels(
-            method=method,
-            path=path,
-            status=status,
-        ).inc()
+        try:
+            response = await call_next(request)
+            status = str(response.status_code)
 
-        REQUEST_LATENCY.labels(
-            method=method,
-            path=path,
-        ).observe(duration)
+            return response
 
-        return response
+        except Exception:
+            status = "500"
+            raise
+
+        finally:
+            duration = time.perf_counter() - start_time
+
+            REQUEST_COUNT.labels(
+                method=method,
+                path=path,
+                status=status,
+            ).inc()
+
+            REQUEST_LATENCY.labels(
+                method=method,
+                path=path,
+            ).observe(duration)
 
 
 app.add_middleware(MetricsMiddleware)
