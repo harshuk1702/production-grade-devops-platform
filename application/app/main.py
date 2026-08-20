@@ -99,3 +99,8 @@ def get_orders():
             {"id": 1003, "status": "completed"},
         ]
     }
+
+
+@app.get("/api/test-error")
+def test_error():
+    raise RuntimeError("Intentional test error for alerting")
