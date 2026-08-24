@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: devops-demo-api-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: devops-demo-api
+      rules:
+        - alert: DevOpsDemoAPIHigh5xxRate
+          expr: |
+            (
+              sum(rate(http_requests_total{service="devops-demo-api",status=~"5.."}[5m]))
+              /
+              sum(rate(http_requests_total{service="devops-demo-api"}[5m]))
+            ) * 100 > 5
+          for: 1m
+          labels:
+            severity: warning
+            service: devops-demo-api
+          annotations:
+            summary: "High 5xx error rate for devops-demo-api"
+            description: "The devops-demo-api 5xx error rate is above 5% for more than 1 minute."

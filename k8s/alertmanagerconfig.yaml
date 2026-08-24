@@ -1,0 +1,27 @@
+﻿apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: devops-demo-discord
+  namespace: monitoring
+spec:
+  route:
+    receiver: devops-demo-discord
+    groupBy:
+      - alertname
+      - service
+    groupWait: 5s
+    groupInterval: 10s
+    repeatInterval: 1h
+    matchers:
+      - name: alertname
+        matchType: "="
+        value: DevOpsDemoAPIHigh5xxRate
+  receivers:
+    - name: devops-demo-discord
+      discordConfigs:
+        - apiURL:
+            name: discord-webhook
+            key: webhook-url
+          sendResolved: true
+          title: "DevOps Demo API Alert"
+          message: "{{ .CommonAnnotations.summary }}"
