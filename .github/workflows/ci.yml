@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -52,7 +52,13 @@ jobs:
         uses: docker://ghcr.io/yannh/kubeconform:latest
         with:
           entrypoint: /kubeconform
-          args: -summary -strict k8s/deployment.yaml k8s/service.yaml
+          args: >-
+            -summary
+            -strict
+            k8s/deployment.yaml
+            k8s/service.yaml
+            k8s/prometheusrule.yaml
+            k8s/alertmanagerconfig.yaml
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
