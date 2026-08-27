@@ -1,0 +1,6 @@
+﻿alertmanager:
+  alertmanagerSpec:
+    alertmanagerConfigSelector:
+      matchLabels:
+        alertmanagerConfig: devops-demo
+    alertmanagerConfigNamespaceSelector: {}

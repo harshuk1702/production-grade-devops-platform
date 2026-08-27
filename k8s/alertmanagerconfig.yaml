@@ -3,6 +3,9 @@ kind: AlertmanagerConfig
 metadata:
   name: devops-demo-discord
   namespace: monitoring
+  labels:
+    alertmanagerConfig: devops-demo
+
 spec:
   route:
     receiver: devops-demo-discord
@@ -16,6 +19,7 @@ spec:
       - name: alertname
         matchType: "="
         value: DevOpsDemoAPIHigh5xxRate
+
   receivers:
     - name: devops-demo-discord
       discordConfigs:
@@ -24,4 +28,12 @@ spec:
             key: webhook-url
           sendResolved: true
           title: "DevOps Demo API Alert"
-          message: "{{ .CommonAnnotations.summary }}"
+          message: |
+            {{ range .Alerts }}
+            🚨 **{{ .Labels.alertname }}**
+
+            **Service:** {{ .Labels.service }}
+            **Severity:** {{ .Labels.severity }}
+            **Summary:** {{ .Annotations.summary }}
+            **Description:** {{ .Annotations.description }}
+            {{ end }}
