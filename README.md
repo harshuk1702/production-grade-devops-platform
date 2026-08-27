@@ -8,7 +8,7 @@ The platform is being built incrementally. Each stage is implemented, tested, va
 
 ## Current Status
 
-The application, containerization, CI/CD, security, and Kubernetes foundations are implemented and validated.
+The application, containerization, CI/CD, security, Kubernetes, application metrics, Prometheus alerting, and Discord notification foundations are implemented and validated.
 
 ### Implemented
 
@@ -30,13 +30,20 @@ The application, containerization, CI/CD, security, and Kubernetes foundations a
 - Liveness probe
 - CPU and memory resource requests and limits
 - Kubernetes container security context
+- Application Prometheus metrics
+- Prometheus scraping configuration
+- PrometheusRule alerting
+- Alertmanager configuration
+- Discord alert notifications
+- AlertmanagerConfig selection using Kubernetes labels
+- AlertmanagerConfig namespace selection
+- Persistent Alertmanager configuration through Helm values
 
 ### Currently Being Built
 
-- Application metrics
-- Prometheus
-- Grafana
-- Kubernetes observability
+- Grafana dashboards
+- Kubernetes-level observability
+- Advanced alerting and SLO monitoring
 
 ### Planned
 
@@ -44,7 +51,7 @@ The application, containerization, CI/CD, security, and Kubernetes foundations a
 - Traffic management
 - Automated promotion and rollback
 - Centralized logging
-- SLOs and alerting
+- SLOs and advanced alerting
 - Remote/cloud Kubernetes deployment
 
 ---
@@ -71,31 +78,46 @@ Pytest Tests          Docker Build
                     Trivy Security Scan
                            |
                            v
-                  Kubernetes Validation
+                   Kubernetes Validation
                            |
                            v
                  GitHub Container Registry
                            |
                            v
-                     Kubernetes
+                      Kubernetes
                            |
-                    +------+------+
-                    |             |
-                    v             v
-              Deployment      ClusterIP
-              2 replicas       Service
-                    |
-              RollingUpdate
-                    |
-          +---------+---------+
-          |                   |
-          v                   v
-    Readiness Probe      Liveness Probe
-          |                   |
-          +---------+---------+
-                    |
-                    v
-              FastAPI API
+                  +--------+--------+
+                  |                 |
+                  v                 v
+             Deployment        ClusterIP
+             2 replicas         Service
+                  |
+             RollingUpdate
+                  |
+          +-------+-------+
+          |               |
+          v               v
+    Readiness Probe   Liveness Probe
+          |               |
+          +-------+-------+
+                  |
+                  v
+             FastAPI API
+                  |
+                  v
+        Prometheus Application Metrics
+                  |
+                  v
+             Prometheus
+                  |
+                  v
+          PrometheusRule
+                  |
+                  v
+             Alertmanager
+                  |
+                  v
+              Discord
 ```
 
 ### Target Architecture
@@ -118,10 +140,10 @@ Automated Tests      Docker Build
                   Security Scanning
                          |
                          v
-                 Container Registry
+                  Container Registry
                          |
                          v
-                    Kubernetes
+                     Kubernetes
                          |
               +----------+----------+
               |                     |
@@ -131,22 +153,22 @@ Automated Tests      Docker Build
               +----------+----------+
                          |
                          v
-                 Traffic Management
+                  Traffic Management
                          |
                          v
-                   Observability
-                 /       |        \
-                /        |         \
-           Metrics      Logs     Traces
-              |
-              v
-       Prometheus / Grafana
-              |
-              v
-       SLOs / Alerting
-              |
-              v
-      Automated Rollback
+                    Observability
+                  /       |        \
+                 /        |         \
+            Metrics      Logs      Traces
+                |
+                v
+        Prometheus / Grafana
+                |
+                v
+         SLOs / Alerting
+                |
+                v
+        Automated Rollback
 ```
 
 The target architecture represents the planned final state of the platform. Components are marked as implemented only after they have been deployed and validated.
@@ -163,6 +185,7 @@ The target architecture represents the planned final state of the platform. Comp
 - Pydantic
 - Pytest
 - HTTPX
+- prometheus-client
 
 ### Containerization
 
@@ -194,14 +217,24 @@ The target architecture represents the planned final state of the platform. Comp
 - SecurityContext
 - GHCR imagePullSecret
 
-### Planned Observability
+### Observability
 
 - Prometheus
-- Grafana
+- Alertmanager
+- Prometheus Operator
+- PrometheusRule
+- AlertmanagerConfig
 - Application metrics
+- Discord alert notifications
+
+### Planned Observability
+
+- Grafana
 - Kubernetes metrics
 - Centralized logging
-- SLOs and alerting
+- SLOs
+- Advanced alerting
+- Distributed tracing
 
 ### Planned Progressive Delivery
 
@@ -222,9 +255,85 @@ The FastAPI application exposes the following endpoints:
 | `GET /health` | Application health check |
 | `GET /api/products` | Product data |
 | `GET /api/orders` | Order data |
+| `GET /api/test-error` | Intentional 500 error for alert validation |
+| `GET /metrics/` | Prometheus application metrics |
 | `GET /docs` | Swagger UI |
 
 FastAPI automatically provides OpenAPI documentation through the Swagger interface.
+
+The `/api/test-error` endpoint intentionally raises an exception and returns HTTP 500. It is used to validate application error metrics and the Prometheus alerting pipeline.
+
+---
+
+## Application Metrics
+
+The application exposes Prometheus metrics using the `prometheus-client` library.
+
+Two custom metrics are currently implemented:
+
+```text
+http_requests_total
+http_request_duration_seconds
+```
+
+### Request Counter
+
+The `http_requests_total` counter records HTTP requests using the following labels:
+
+```text
+method
+path
+status
+```
+
+Example:
+
+```text
+http_requests_total{method="GET",path="/",status="200"}
+```
+
+### Request Latency
+
+The `http_request_duration_seconds` histogram records HTTP request latency using:
+
+```text
+method
+path
+```
+
+### Exception Handling
+
+Application exceptions are also recorded as HTTP 500 responses by the metrics middleware.
+
+For example:
+
+```text
+http_requests_total{method="GET",path="/api/test-error",status="500"}
+```
+
+This allows Prometheus to calculate application error rates and trigger alerts based on HTTP 5xx responses.
+
+### Verify Metrics Locally
+
+The `/metrics` endpoint redirects to `/metrics/`, so use `-L` when testing with `curl`:
+
+```powershell
+curl.exe -L http://localhost:8080/metrics/
+```
+
+To inspect HTTP request metrics:
+
+```powershell
+curl.exe -L http://localhost:8080/metrics/ | Select-String "http_requests_total"
+```
+
+Example output includes:
+
+```text
+http_requests_total{method="GET",path="/",status="200"}
+http_requests_total{method="GET",path="/health",status="200"}
+http_requests_total{method="GET",path="/api/test-error",status="500"}
+```
 
 ---
 
@@ -236,17 +345,19 @@ Run the tests locally:
 
 ```powershell
 cd application
+
 .\.venv\Scripts\Activate.ps1
+
 pytest
 ```
+
+The test suite validates the application's main API behaviour and verifies that the metrics endpoint is available.
 
 Current validation:
 
 ```text
 4 passed
 ```
-
-The test suite validates the application's main API behaviour.
 
 ---
 
@@ -407,6 +518,14 @@ The CI pipeline publishes:
 
 The Kubernetes Deployment uses an immutable commit-SHA image reference.
 
+Example:
+
+```text
+ghcr.io/harshuk1702/devops-demo-api:<commit-sha>
+```
+
+This ensures that Kubernetes deployments reference a specific immutable image version rather than a mutable tag such as `latest`.
+
 ---
 
 ## Kubernetes
@@ -452,15 +571,15 @@ Application Pods
 Each container requests:
 
 ```text
-CPU:    100m
-Memory: 128Mi
+CPU:     100m
+Memory:  128Mi
 ```
 
 and has limits of:
 
 ```text
-CPU:    500m
-Memory: 512Mi
+CPU:     500m
+Memory:  512Mi
 ```
 
 ### Readiness Probe
@@ -526,9 +645,275 @@ kubectl rollout status deployment/devops-demo-api
 Expected deployment state:
 
 ```text
-READY       2/2
-UP-TO-DATE  2
-AVAILABLE   2
+READY        2/2
+UP-TO-DATE   2
+AVAILABLE    2
+```
+
+### Verify the Deployed Image
+
+```powershell
+kubectl get deployment devops-demo-api -o jsonpath="{.spec.template.spec.containers[0].image}"
+```
+
+### Verify Application Endpoints
+
+When the application is exposed locally on port `8080`:
+
+```powershell
+curl.exe http://localhost:8080/
+```
+
+```powershell
+curl.exe http://localhost:8080/health
+```
+
+### Verify Metrics
+
+Because FastAPI redirects `/metrics` to `/metrics/`, use:
+
+```powershell
+curl.exe -L http://localhost:8080/metrics/
+```
+
+To inspect request metrics:
+
+```powershell
+curl.exe -L http://localhost:8080/metrics/ | Select-String "http_requests_total"
+```
+
+---
+
+## Prometheus Observability
+
+Prometheus is used to collect application metrics from the FastAPI service.
+
+The application exposes Prometheus-compatible metrics through:
+
+```text
+/metrics/
+```
+
+The metrics include:
+
+```text
+http_requests_total
+http_request_duration_seconds
+```
+
+Prometheus can scrape the Kubernetes Service and collect these application-level metrics.
+
+The observability pipeline is:
+
+```text
+FastAPI Application
+       |
+       v
+/metrics/
+       |
+       v
+Kubernetes Service
+       |
+       v
+Prometheus
+       |
+       v
+PrometheusRule
+       |
+       v
+Alertmanager
+       |
+       v
+Discord
+```
+
+---
+
+## Prometheus Alerting
+
+A PrometheusRule is used to detect elevated HTTP 5xx error rates from the application.
+
+The alert is:
+
+```text
+DevOpsDemoAPIHigh5xxRate
+```
+
+The alert is based on the application's Prometheus request counter:
+
+```text
+http_requests_total
+```
+
+The intentional test endpoint:
+
+```text
+/api/test-error
+```
+
+returns HTTP 500 and increments the metric:
+
+```text
+http_requests_total{method="GET",path="/api/test-error",status="500"}
+```
+
+This provides a controlled way to validate the complete alerting pipeline.
+
+---
+
+## Alertmanager
+
+Alertmanager receives alerts generated by Prometheus and routes the application alert to the configured Discord receiver.
+
+The Alertmanager configuration uses an `AlertmanagerConfig` resource:
+
+```text
+monitoring/devops-demo-discord
+```
+
+The configuration is selected using the label:
+
+```yaml
+labels:
+  alertmanagerConfig: devops-demo
+```
+
+The Alertmanager configuration selector is:
+
+```yaml
+alertmanagerConfigSelector:
+  matchLabels:
+    alertmanagerConfig: devops-demo
+```
+
+The namespace selector allows Alertmanager to discover matching `AlertmanagerConfig` resources across namespaces:
+
+```yaml
+alertmanagerConfigNamespaceSelector: {}
+```
+
+The application alert is matched using:
+
+```text
+alertname = DevOpsDemoAPIHigh5xxRate
+```
+
+---
+
+## Discord Notifications
+
+Alertmanager sends the application alert to Discord.
+
+The Discord notification includes:
+
+```text
+Alert name
+Service
+Severity
+Summary
+Description
+```
+
+The configured notification title is:
+
+```text
+DevOps Demo API Alert
+```
+
+Resolved notifications are enabled:
+
+```yaml
+sendResolved: true
+```
+
+The Discord webhook is stored in a Kubernetes Secret rather than directly in the Git repository.
+
+The AlertmanagerConfig references:
+
+```yaml
+apiURL:
+  name: discord-webhook
+  key: webhook-url
+```
+
+This prevents the actual Discord webhook URL from being committed to Git.
+
+---
+
+## Alertmanager Configuration Persistence
+
+The Alertmanager configuration selector is persisted through:
+
+```text
+k8s/monitoring-values.yaml
+```
+
+The relevant configuration is:
+
+```yaml
+alertmanager:
+  alertmanagerSpec:
+    alertmanagerConfigSelector:
+      matchLabels:
+        alertmanagerConfig: devops-demo
+    alertmanagerConfigNamespaceSelector: {}
+```
+
+This ensures that the Alertmanager configuration selection survives a Helm-based monitoring deployment or upgrade.
+
+---
+
+## Alert Validation
+
+The application error endpoint can be used to generate a controlled HTTP 500 response:
+
+```powershell
+curl.exe -s -o NUL -w "%{http_code}`n" http://localhost:8080/api/test-error
+```
+
+Expected result:
+
+```text
+500
+```
+
+After generating the error traffic, verify the application metric:
+
+```powershell
+curl.exe -L http://localhost:8080/metrics/ | Select-String "http_requests_total"
+```
+
+The output should contain a metric similar to:
+
+```text
+http_requests_total{method="GET",path="/api/test-error",status="500"}
+```
+
+This confirms that:
+
+```text
+HTTP Request
+    |
+    v
+FastAPI
+    |
+    v
+HTTP 500
+    |
+    v
+Application Metric
+    |
+    v
+Prometheus
+    |
+    v
+PrometheusRule
+    |
+    v
+Alertmanager
+    |
+    v
+Discord
 ```
 
 ---
@@ -573,6 +958,12 @@ Deployment history:
 kubectl rollout history deployment/devops-demo-api
 ```
 
+A previous revision can be rolled back using:
+
+```powershell
+kubectl rollout undo deployment/devops-demo-api
+```
+
 ---
 
 ## Repository Structure
@@ -600,7 +991,10 @@ production-grade-devops-platform/
 ├── docs/
 │
 ├── k8s/
+│   ├── alertmanagerconfig.yaml
 │   ├── deployment.yaml
+│   ├── monitoring-values.yaml
+│   ├── prometheusrule.yaml
 │   └── service.yaml
 │
 ├── scripts/
@@ -651,7 +1045,22 @@ production-grade-devops-platform/
 - [x] RollingUpdate strategy
 - [ ] ConfigMap / application Secrets
 
-### Phase 5 — Progressive Delivery
+### Phase 5 — Observability
+
+- [x] Application metrics
+- [x] Prometheus
+- [ ] Grafana
+- [ ] Kubernetes metrics
+- [ ] Centralized logging
+- [x] HTTP 5xx monitoring
+- [x] PrometheusRule
+- [x] Alertmanager
+- [x] Discord notifications
+- [ ] Latency monitoring
+- [ ] SLOs
+- [ ] Advanced alerting
+
+### Phase 6 — Progressive Delivery
 
 - [ ] Stable deployment
 - [ ] Canary deployment
@@ -659,18 +1068,6 @@ production-grade-devops-platform/
 - [ ] Canary validation
 - [ ] Automated promotion
 - [ ] Automated rollback
-
-### Phase 6 — Observability
-
-- [ ] Application metrics
-- [ ] Prometheus
-- [ ] Grafana
-- [ ] Kubernetes metrics
-- [ ] Centralized logging
-- [ ] Latency monitoring
-- [ ] Error-rate monitoring
-- [ ] SLOs
-- [ ] Alerting
 
 ### Phase 7 — Cloud / Remote Kubernetes
 
@@ -705,7 +1102,7 @@ This approach keeps each stage reproducible and provides a clear Git history of 
 
 ## Current Milestone
 
-The application delivery foundation is complete.
+The application delivery and initial observability foundation is complete.
 
 The platform currently demonstrates:
 
@@ -729,6 +1126,18 @@ Kubernetes
 Rolling Updates
     +
 Health Checks
+    +
+Application Metrics
+    +
+Prometheus
+    +
+PrometheusRule
+    +
+Alertmanager
+    +
+Discord Notifications
 ```
 
-The next major milestone is **observability**, beginning with application metrics and Prometheus, followed by Grafana dashboards and Kubernetes-level monitoring.
+The next major milestone is **advanced observability**, beginning with Grafana dashboards and Kubernetes-level monitoring, followed by SLOs, centralized logging, and more advanced alerting.
+
+---
