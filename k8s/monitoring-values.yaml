@@ -3,4 +3,7 @@
     alertmanagerConfigSelector:
       matchLabels:
         alertmanagerConfig: devops-demo
-    alertmanagerConfigNamespaceSelector: {}
+
+    alertmanagerConfigNamespaceSelector:
+      matchNames:
+        - monitoring
