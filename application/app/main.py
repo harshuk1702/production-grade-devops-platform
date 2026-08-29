@@ -107,6 +107,17 @@ def get_orders():
     }
 
 
+@app.get("/api/test-slow")
+async def test_slow():
+    import asyncio
+
+    await asyncio.sleep(2)
+
+    return {
+        "message": "Intentional slow response for alert testing"
+    }
+
+
 @app.get("/api/test-error")
 def test_error():
     raise RuntimeError("Intentional test error for alerting")

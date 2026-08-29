@@ -9,6 +9,8 @@ spec:
   groups:
     - name: devops-demo-api
       rules:
+
+        # 1. High 5xx error rate
         - alert: DevOpsDemoAPIHigh5xxRate
           expr: |
             (
@@ -23,3 +25,87 @@ spec:
           annotations:
             summary: "High 5xx error rate for devops-demo-api"
             description: "The devops-demo-api 5xx error rate is above 5% for more than 1 minute."
+
+        # 2. High request latency
+        - alert: DevOpsDemoAPIHighLatency
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_sum{service="devops-demo-api"}[5m]))
+              /
+              sum(rate(http_request_duration_seconds_count{service="devops-demo-api"}[5m]))
+            ) > 1
+          for: 2m
+          labels:
+            severity: warning
+            service: devops-demo-api
+          annotations:
+            summary: "High request latency for devops-demo-api"
+            description: "The average request latency is above 1 second for more than 2 minutes."
+
+        # 3. API target unavailable
+        - alert: DevOpsDemoAPIDown
+          expr: |
+            up{job="devops-demo-api"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            service: devops-demo-api
+          annotations:
+            summary: "devops-demo-api target is down"
+            description: "Prometheus cannot successfully scrape a devops-demo-api target."
+
+        # 4. High CPU usage
+        - alert: DevOpsDemoAPIHighCPU
+          expr: |
+            (
+              sum by (pod) (
+                rate(container_cpu_usage_seconds_total{
+                  namespace="default",
+                  container="devops-demo-api",
+                  image!=""
+                }[5m])
+              )
+              /
+              sum by (pod) (
+                kube_pod_container_resource_requests{
+                  namespace="default",
+                  container="devops-demo-api",
+                  resource="cpu"
+                }
+              )
+            ) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            service: devops-demo-api
+          annotations:
+            summary: "High CPU usage for devops-demo-api"
+            description: "A devops-demo-api pod is using more than 80% of its requested CPU for 5 minutes."
+
+        # 5. High memory usage
+        - alert: DevOpsDemoAPIHighMemory
+          expr: |
+            (
+              sum by (pod) (
+                container_memory_working_set_bytes{
+                  namespace="default",
+                  container="devops-demo-api",
+                  image!=""
+                }
+              )
+              /
+              sum by (pod) (
+                kube_pod_container_resource_limits{
+                  namespace="default",
+                  container="devops-demo-api",
+                  resource="memory"
+                }
+              )
+            ) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            service: devops-demo-api
+          annotations:
+            summary: "High memory usage for devops-demo-api"
+            description: "A devops-demo-api pod is using more than 80% of its memory limit for 5 minutes."
