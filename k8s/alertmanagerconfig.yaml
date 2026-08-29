@@ -16,9 +16,9 @@ spec:
     groupInterval: 10s
     repeatInterval: 1h
     matchers:
-      - name: alertname
+      - name: service
         matchType: "="
-        value: DevOpsDemoAPIHigh5xxRate
+        value: devops-demo-api
 
   receivers:
     - name: devops-demo-discord
