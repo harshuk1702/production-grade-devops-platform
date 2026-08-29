@@ -30,7 +30,7 @@ spec:
 
       containers:
         - name: devops-demo-api
-          image: ghcr.io/harshuk1702/devops-demo-api:542ed62cc0dd3855a215a3617b74bf82d379bafc
+          image: ghcr.io/harshuk1702/devops-demo-api:f7fd3455c1079067c3ec7d640ec06a09519df668
 
           ports:
             - containerPort: 8000
