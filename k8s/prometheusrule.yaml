@@ -10,7 +10,9 @@ spec:
     - name: devops-demo-api
       rules:
 
+        # ============================================================
         # 1. High 5xx error rate
+        # ============================================================
         - alert: DevOpsDemoAPIHigh5xxRate
           expr: |
             (
@@ -33,7 +35,9 @@ spec:
             summary: "High 5xx error rate for devops-demo-api"
             description: "More than 5% of requests to devops-demo-api returned 5xx responses during the last 5 minutes."
 
+        # ============================================================
         # 2. High p95 request latency
+        # ============================================================
         - alert: DevOpsDemoAPIHighLatency
           expr: |
             histogram_quantile(
@@ -52,7 +56,9 @@ spec:
             summary: "High p95 request latency for devops-demo-api"
             description: "The p95 request latency is above 1 second for more than 2 minutes."
 
+        # ============================================================
         # 3. API deployment unavailable
+        # ============================================================
         - alert: DevOpsDemoAPIDown
           expr: |
             kube_deployment_status_replicas_available{
@@ -72,7 +78,9 @@ spec:
             summary: "devops-demo-api deployment unavailable"
             description: "The devops-demo-api deployment has fewer available replicas than desired."
 
+        # ============================================================
         # 4. High CPU usage
+        # ============================================================
         - alert: DevOpsDemoAPIHighCPU
           expr: |
             (
@@ -100,7 +108,9 @@ spec:
             summary: "High CPU usage for devops-demo-api"
             description: "A devops-demo-api pod is using more than 80% of its requested CPU for 5 minutes."
 
+        # ============================================================
         # 5. High memory usage
+        # ============================================================
         - alert: DevOpsDemoAPIHighMemory
           expr: |
             (
@@ -127,3 +137,109 @@ spec:
           annotations:
             summary: "High memory usage for devops-demo-api"
             description: "A devops-demo-api pod is using more than 80% of its memory limit for 5 minutes."
+
+        # ============================================================
+        # SLO RECORDING RULES
+        #
+        # SLO target:
+        #   99% successful application requests
+        #
+        # Excluded endpoints:
+        #   /metrics
+        #   /metrics/
+        #   /api/test-error
+        #
+        # The intentional /api/test-error endpoint is excluded because
+        # it is used for alert validation rather than real user traffic.
+        # ============================================================
+
+        # ------------------------------------------------------------
+        # 6. Total application request rate
+        # ------------------------------------------------------------
+        - record: devops_demo_api:requests:rate5m
+          expr: |
+            sum(
+              rate(http_requests_total{
+                service="devops-demo-api",
+                path!="/metrics",
+                path!="/metrics/",
+                path!="/api/test-error"
+              }[5m])
+            )
+
+        # ------------------------------------------------------------
+        # 7. Successful application request rate
+        # ------------------------------------------------------------
+        - record: devops_demo_api:requests_success:rate5m
+          expr: |
+            sum(
+              rate(http_requests_total{
+                service="devops-demo-api",
+                status=~"2..",
+                path!="/metrics",
+                path!="/metrics/",
+                path!="/api/test-error"
+              }[5m])
+            )
+
+        # ------------------------------------------------------------
+        # 8. Availability SLI
+        #
+        # Successful requests / total requests
+        # ------------------------------------------------------------
+        - record: devops_demo_api:availability:sli5m
+          expr: |
+            (
+              devops_demo_api:requests_success:rate5m
+              /
+              devops_demo_api:requests:rate5m
+            ) * 100
+
+        # ------------------------------------------------------------
+        # 9. Error rate SLI
+        #
+        # 100% - availability
+        # ------------------------------------------------------------
+        - record: devops_demo_api:error_rate:sli5m
+          expr: |
+            100 - devops_demo_api:availability:sli5m
+
+        # ============================================================
+        # SLO ALERTING
+        # ============================================================
+
+        # ------------------------------------------------------------
+        # 10. Availability below 99% SLO
+        # ------------------------------------------------------------
+        - alert: DevOpsDemoAPISLOViolation
+          expr: |
+            devops_demo_api:availability:sli5m < 99
+          for: 5m
+          labels:
+            severity: warning
+            service: devops-demo-api
+            slo: availability
+          annotations:
+            summary: "Availability SLO violated for devops-demo-api"
+            description: "The 5-minute application availability SLI is below the 99% availability SLO."
+
+        # ------------------------------------------------------------
+        # 11. Fast error-budget burn
+        #
+        # 99% SLO means:
+        #   1% error budget
+        #
+        # A 5-minute error rate above 10% represents rapid
+        # consumption of the available error budget.
+        # ------------------------------------------------------------
+        - alert: DevOpsDemoAPIErrorBudgetBurn
+          expr: |
+            devops_demo_api:error_rate:sli5m > 10
+          for: 5m
+          labels:
+            severity: critical
+            service: devops-demo-api
+            slo: availability
+          annotations:
+            summary: "Fast error-budget burn for devops-demo-api"
+            description: "The application error rate has exceeded 10% for 5 minutes, indicating rapid consumption of the 99% availability SLO error budget."
