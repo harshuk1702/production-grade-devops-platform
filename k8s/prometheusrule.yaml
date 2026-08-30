@@ -14,15 +14,17 @@ spec:
         - alert: DevOpsDemoAPIHigh5xxRate
           expr: |
             (
-              sum(increase(http_requests_total{
-                service="devops-demo-api",
-                status=~"5.."
-              }[5m]))
-              /
-              sum(increase(http_requests_total{
-                service="devops-demo-api"
-              }[5m]))
-            ) * 100 > 5
+              (
+                sum(increase(http_requests_total{
+                  service="devops-demo-api",
+                  status=~"5.."
+                }[5m]))
+                /
+                sum(increase(http_requests_total{
+                  service="devops-demo-api"
+                }[5m]))
+              ) * 100
+            ) > 5
           for: 1m
           labels:
             severity: warning
@@ -50,17 +52,25 @@ spec:
             summary: "High p95 request latency for devops-demo-api"
             description: "The p95 request latency is above 1 second for more than 2 minutes."
 
-        # 3. API target unavailable
+        # 3. API deployment unavailable
         - alert: DevOpsDemoAPIDown
           expr: |
-            up{job="devops-demo-api"} == 0
+            kube_deployment_status_replicas_available{
+              namespace="default",
+              deployment="devops-demo-api"
+            }
+            <
+            kube_deployment_spec_replicas{
+              namespace="default",
+              deployment="devops-demo-api"
+            }
           for: 1m
           labels:
             severity: critical
             service: devops-demo-api
           annotations:
-            summary: "devops-demo-api target is down"
-            description: "Prometheus cannot successfully scrape a devops-demo-api target."
+            summary: "devops-demo-api deployment unavailable"
+            description: "The devops-demo-api deployment has fewer available replicas than desired."
 
         # 4. High CPU usage
         - alert: DevOpsDemoAPIHighCPU
