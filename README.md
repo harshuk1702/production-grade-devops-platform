@@ -80,11 +80,16 @@ maxSurge: 1
 - Discord alert notifications
 - Alert recovery notifications
 
-### Currently Being Built
+### Implemented Reliability Engineering
 
 - Service-level objectives (SLOs)
-- SLO-based alerting
-- Advanced alerting and reliability monitoring
+- Availability SLI
+- Error-rate SLI
+- SLO recording rules
+- Error-budget calculation
+- Error-budget burn-rate alerting
+- SLO violation alerting
+- SLO validation through Prometheus queries
 
 ### Planned
 
@@ -105,21 +110,13 @@ The current platform implements the application delivery pipeline and the initia
 
 ```text
 Developer
-
     |
-
     v
-
 GitHub Repository
-
     |
-
     v
-
 GitHub Actions CI
-
     |
-
     +----------------------+----------------------+
     |                      |                      |
     v                      v                      v
@@ -163,13 +160,13 @@ Pytest Tests          Docker Build       Kubernetes Validation
     +-----+----------------------+
     |                            |
     v                            v
-PrometheusRule                 Grafana
+PrometheusRule                Grafana
     |
     v
 Alertmanager
     |
     v
- Discord
+Discord
 ```
 
 The current architecture represents components that have been implemented and validated.
@@ -182,19 +179,16 @@ The observability layer collects application-level and Kubernetes-level telemetr
 
 ```text
                     Kubernetes Cluster
-
                            |
-
              +-------------+-------------+
              |                           |
              v                           v
-
       FastAPI Application        Kubernetes Resources
              |                           |
              |                           +-------------------+
              |                           |                   |
              v                           v                   v
-       /metrics/ endpoint        kube-state-metrics    node-exporter
+       /metrics/ endpoint       kube-state-metrics    node-exporter
              |                           |                   |
              +-------------+-------------+-------------------+
                            |
@@ -248,9 +242,7 @@ The observability flow is:
 
 ```text
 Kubernetes
-
     |
-
     +----------------------+
     |                      |
     v                      v
@@ -271,29 +263,17 @@ Application and Kubernetes metrics are evaluated by Prometheus alerting rules.
 
 ```text
 Application / Kubernetes Metrics
-
               |
-
               v
-
           Prometheus
-
               |
-
               v
-
        PrometheusRule
-
               |
-
               v
-
         Alertmanager
-
               |
-
               v
-
            Discord
 ```
 
@@ -315,21 +295,13 @@ The target architecture represents the planned final state of the platform, incl
 
 ```text
 Developer
-
     |
-
     v
-
 GitHub Repository
-
     |
-
     v
-
 GitHub Actions CI/CD
-
     |
-
     +----------------------+----------------------+
     |                      |                      |
     v                      v                      v
@@ -347,7 +319,7 @@ Automated Tests       Docker Build       Kubernetes Validation
                 +----------+----------+
                 |                     |
                 v                     v
-             Stable                Canary
+             Stable               Canary
                 |                     |
                 +----------+----------+
                            |
@@ -360,7 +332,7 @@ Automated Tests       Docker Build       Kubernetes Validation
              +-------------+-------------+
              |             |             |
              v             v             v
-          Metrics        Logs          Traces
+          Metrics        Logs         Traces
              |             |             |
              v             v             v
         Prometheus   Log Platform   Trace Platform
@@ -549,9 +521,7 @@ Example output includes:
 
 ```text
 http_requests_total{method="GET",path="/",status="200"}
-
 http_requests_total{method="GET",path="/health",status="200"}
-
 http_requests_total{method="GET",path="/api/test-error",status="500"}
 ```
 
@@ -565,9 +535,7 @@ Run the tests locally:
 
 ```powershell
 cd application
-
 .\.venv\Scripts\Activate.ps1
-
 pytest
 ```
 
@@ -649,13 +617,9 @@ Kubernetes additionally enforces:
 
 ```text
 runAsUser: 10001
-
 runAsGroup: 10001
-
 runAsNonRoot: true
-
 allowPrivilegeEscalation: false
-
 capabilities:
   drop:
     - ALL
@@ -674,59 +638,32 @@ The CI workflow performs the following stages:
 
 ```text
 Checkout
-
    |
-
    v
-
 Setup Python 3.13
-
    |
-
    v
-
 Install Dependencies
-
    |
-
    v
-
 Run Pytest
-
    |
-
    v
-
 Build Docker Image
-
    |
-
    v
-
 Trivy Vulnerability Scan
-
    |
-
    v
-
 Validate Kubernetes Manifests
-
    |
-
    v
-
 Login to GHCR
-
    |
-
    v
-
 Tag Docker Image
-
    |
-
    v
-
 Push Docker Images
 ```
 
@@ -823,17 +760,11 @@ The application is exposed internally through a Kubernetes `ClusterIP` Service.
 
 ```text
 Service
-
    |
-
    v
-
 devops-demo-api:8000
-
    |
-
    v
-
 Application Pods
 ```
 
@@ -917,9 +848,7 @@ Expected deployment state:
 
 ```text
 READY        2/2
-
 UP-TO-DATE   2
-
 AVAILABLE    2
 ```
 
@@ -1016,7 +945,6 @@ The application metrics include:
 
 ```text
 http_requests_total
-
 http_request_duration_seconds
 ```
 
@@ -1024,7 +952,6 @@ Kubernetes-level metrics are provided through:
 
 ```text
 kube-state-metrics
-
 node-exporter
 ```
 
@@ -1032,27 +959,16 @@ The observability pipeline is:
 
 ```text
 FastAPI Application
-
        |
-
        v
-
    /metrics/
-
        |
-
        v
-
 Kubernetes Service
-
        |
-
        v
-
    Prometheus
-
        |
-
        +------------------+
        |                  |
        v                  v
@@ -1062,7 +978,7 @@ Kubernetes Service
                     Alertmanager
                          |
                          v
-                      Discord
+                       Discord
 ```
 
 Prometheus provides the metrics backend for both Grafana dashboards and alert evaluation.
@@ -1090,21 +1006,13 @@ The Grafana architecture is:
 
 ```text
 Application Metrics
-
         |
-
         v
-
     Prometheus
-
         |
-
         v
-
       Grafana
-
         |
-
         +-----------------------+
         |                       |
         v                       v
@@ -1157,17 +1065,12 @@ The Kubernetes observability pipeline is:
 
 ```text
 Kubernetes Cluster
-
        |
-
        +-------------------------+
        |                         |
        v                         v
-
 kube-state-metrics          node-exporter
-
        |                         |
-
        +------------+------------+
                     |
                     v
@@ -1187,13 +1090,9 @@ The current application alerts are:
 
 ```text
 DevOpsDemoAPIHigh5xxRate
-
 DevOpsDemoAPIHighLatency
-
 DevOpsDemoAPIDown
-
 DevOpsDemoAPIHighCPU
-
 DevOpsDemoAPIHighMemory
 ```
 
@@ -1261,7 +1160,6 @@ The underlying Kubernetes metrics are:
 
 ```text
 kube_deployment_status_replicas_available
-
 kube_deployment_spec_replicas
 ```
 
@@ -1341,7 +1239,6 @@ The current Alertmanager route groups alerts by:
 
 ```text
 alertname
-
 service
 ```
 
@@ -1349,9 +1246,7 @@ The configured grouping behaviour includes:
 
 ```text
 groupWait: 5s
-
 groupInterval: 10s
-
 repeatInterval: 1h
 ```
 
@@ -1365,13 +1260,9 @@ The Discord notification includes:
 
 ```text
 Alert name
-
 Service
-
 Severity
-
 Summary
-
 Description
 ```
 
@@ -1497,11 +1388,8 @@ The alert transitions through:
 
 ```text
 pending
-
     |
-
     v
-
 firing
 ```
 
@@ -1541,7 +1429,6 @@ The healthy state should show:
 
 ```text
 Available replicas: 2
-
 Desired replicas: 2
 ```
 
@@ -1565,53 +1452,29 @@ The complete validation path is:
 
 ```text
 HTTP Request
-
     |
-
     v
-
 FastAPI
-
     |
-
     v
-
 HTTP 500
-
     |
-
     v
-
 Application Metric
-
     |
-
     v
-
 Prometheus
-
     |
-
     v
-
 PrometheusRule
-
     |
-
     v
-
 Alertmanager
-
     |
-
     v
-
 Discord
-
     |
-
     v
-
 Resolved Notification
 ```
 
@@ -1627,41 +1490,23 @@ The update process is:
 
 ```text
 Existing Version
-
       |
-
       v
-
 Create New Pod
-
       |
-
       v
-
 Readiness Probe
-
       |
-
       v
-
 New Pod Becomes Ready
-
       |
-
       v
-
 Terminate Old Pod
-
       |
-
       v
-
 Repeat
-
       |
-
       v
-
 New Version Fully Deployed
 ```
 
@@ -1687,9 +1532,7 @@ The current deployment strategy is:
 
 ```text
 RollingUpdate
-
 maxUnavailable: 0
-
 maxSurge: 1
 ```
 
@@ -1699,69 +1542,37 @@ maxSurge: 1
 
 ```text
 production-grade-devops-platform/
-
 |
-
 ├── .github/
-
 │   └── workflows/
-
 │       └── ci.yml
-
 │
-
 ├── application/
-
 │   ├── app/
-
 │   │   ├── __init__.py
-
 │   │   └── main.py
-
 │   │
-
 │   ├── tests/
-
 │   │   ├── __init__.py
-
 │   │   └── test_api.py
-
 │   │
-
 │   ├── Dockerfile
-
 │   ├── pytest.ini
-
 │   └── requirements.txt
-
 │
-
 ├── docs/
-
 │
-
 ├── k8s/
-
 │   ├── alertmanagerconfig.yaml
-
 │   ├── deployment.yaml
-
 │   ├── monitoring-values.yaml
-
 │   ├── prometheusrule.yaml
-
 │   └── service.yaml
-
 │
-
 ├── scripts/
-
 │   └── deploy.ps1
-
 │
-
 ├── .gitignore
-
 └── README.md
 ```
 
@@ -1824,9 +1635,9 @@ production-grade-devops-platform/
 - [x] CPU monitoring
 - [x] Memory monitoring
 - [x] Application availability monitoring
-- [ ] Service-level objectives (SLOs)
-- [ ] SLO-based alerting
-- [ ] Advanced reliability monitoring
+- [x] Service-level objectives (SLOs)
+- [x] SLO-based alerting
+- [x] Advanced reliability monitoring
 - [ ] Distributed tracing
 
 ### Phase 6 — Progressive Delivery
@@ -1878,73 +1689,39 @@ The platform currently demonstrates:
 
 ```text
 Application
-
     +
-
 Testing
-
     +
-
 Containerization
-
     +
-
 Container Security
-
     +
-
 CI/CD
-
     +
-
 Vulnerability Scanning
-
     +
-
 Container Registry
-
     +
-
 Kubernetes
-
     +
-
 Rolling Updates
-
     +
-
 Health Checks
-
     +
-
 Application Metrics
-
     +
-
 Kubernetes Metrics
-
     +
-
 Prometheus
-
     +
-
 Grafana
-
     +
-
 PrometheusRule
-
     +
-
 Alertmanager
-
     +
-
 Discord Notifications
-
     +
-
 Alert Recovery
 ```
 
@@ -1954,20 +1731,27 @@ The current Kubernetes deployment has also been validated after controlled scali
 Deployment: devops-demo-api
 
 Initial state:
+
 2/2 replicas available
 
 Controlled test:
+
 scaled to 0 replicas
 
 Observed:
+
 0/0 replicas
+
 No application pods
 
 Recovery:
+
 scaled back to 2 replicas
 
 Final state:
+
 2/2 replicas available
+
 2/2 pods running
 ```
 
@@ -1975,7 +1759,6 @@ Prometheus successfully exposes the Kubernetes deployment state through:
 
 ```text
 kube_deployment_status_replicas_available
-
 kube_deployment_spec_replicas
 ```
 
@@ -1983,7 +1766,6 @@ The final healthy state is:
 
 ```text
 Available replicas: 2
-
 Desired replicas: 2
 ```
 
@@ -1991,43 +1773,26 @@ The platform has now progressed beyond basic application monitoring into a broad
 
 ```text
 Application
-
     |
-
     +----------------------+
     |                      |
     v                      v
-
 Application Metrics   Kubernetes Metrics
-
     |                      |
-
     +----------+-----------+
-
                |
-
                v
-
            Prometheus
-
                |
-
-        +------+------+
-        |             |
-        v             v
-
-     Grafana       Alerting
-
+         +-----+-----+
+         |           |
+         v           v
+      Grafana      Alerting
                        |
-
                        v
-
                   Alertmanager
-
                        |
-
                        v
-
                     Discord
 ```
 
@@ -2043,25 +1808,21 @@ The next implementation task starts at:
 PHASE 5 — OBSERVABILITY
 
         |
-
         v
 
 SERVICE-LEVEL OBJECTIVES (SLOs)
 
         |
-
         v
 
 SLO ERROR BUDGETS
 
         |
-
         v
 
 SLO-BASED ALERTING
 
         |
-
         v
 
 ADVANCED RELIABILITY MONITORING
@@ -2079,47 +1840,26 @@ The planned flow is:
 
 ```text
 Existing Application
-
         |
-
         v
-
 Existing Prometheus Metrics
-
         |
-
         v
-
 Availability SLI
-
         |
-
         v
-
 Availability SLO
-
         |
-
         v
-
 Error Budget
-
         |
-
         v
-
 SLO-Based Alert
-
         |
-
         v
-
 Alertmanager
-
         |
-
         v
-
 Discord
 ```
 
@@ -2129,41 +1869,23 @@ After SLOs and reliability monitoring are completed, the project will progress t
 
 ```text
 Centralized Logging
-
         |
-
         v
-
 Distributed Tracing
-
         |
-
         v
-
 Advanced Observability
-
         |
-
         v
-
 Canary Deployment
-
         |
-
         v
-
 Traffic Management
-
         |
-
         v
-
 Automated Promotion
-
         |
-
         v
-
 Automated Rollback
 ```
 
@@ -2171,23 +1893,41 @@ This keeps the project progression logical:
 
 ```text
 Application
+
     ↓
+
 Containerization
+
     ↓
+
 CI/CD
+
     ↓
+
 Kubernetes
+
     ↓
+
 Observability
+
     ↓
+
 Alerting
+
     ↓
+
 SLOs / Reliability Engineering
+
     ↓
+
 Logging / Tracing
+
     ↓
+
 Progressive Delivery
+
     ↓
+
 Automated Rollback
 ```
 
