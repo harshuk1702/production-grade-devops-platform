@@ -10,6 +10,29 @@ The platform is being built incrementally. Each stage is implemented, tested, va
 
 The application delivery platform, containerization, CI/CD, security, Kubernetes deployment, application metrics, Prometheus monitoring, Grafana dashboards, Kubernetes-level observability, Prometheus alerting, Alertmanager routing, and Discord notifications have been implemented and validated.
 
+The current Kubernetes deployment is healthy with:
+
+```text
+Deployment: devops-demo-api
+Namespace: default
+Replicas: 2
+Ready: 2/2
+Available: 2
+```
+
+The deployed application image currently uses an immutable commit-SHA tag:
+
+```text
+ghcr.io/harshuk1702/devops-demo-api:f7fd3455c1079067c3ec7d640ec06a09519df668
+```
+
+The deployment uses a `RollingUpdate` strategy with:
+
+```text
+maxUnavailable: 0
+maxSurge: 1
+```
+
 ### Implemented
 
 - FastAPI application
@@ -65,11 +88,11 @@ The application delivery platform, containerization, CI/CD, security, Kubernetes
 
 ### Planned
 
+- Centralized logging
+- Distributed tracing
 - Canary deployments
 - Traffic management
 - Automated promotion and rollback
-- Centralized logging
-- Distributed tracing
 - Remote/cloud Kubernetes deployment
 
 ---
@@ -78,38 +101,46 @@ The application delivery platform, containerization, CI/CD, security, Kubernetes
 
 ### Current Architecture
 
-The current platform implements the complete application delivery and initial observability pipeline.
+The current platform implements the application delivery pipeline and the initial observability and alerting platform.
 
 ```text
 Developer
+
     |
+
     v
+
 GitHub Repository
+
     |
+
     v
+
 GitHub Actions CI
+
     |
+
     +----------------------+----------------------+
     |                      |                      |
     v                      v                      v
 Pytest Tests          Docker Build       Kubernetes Validation
                            |
                            v
-                   Trivy Security Scan
+                    Trivy Security Scan
                            |
                            v
                   GitHub Container Registry
                            |
                            v
-                      Kubernetes
+                       Kubernetes
                            |
                     +------+------+
                     |             |
                     v             v
                Deployment      Service
-               2 replicas     ClusterIP
+               2 replicas      ClusterIP
                     |
-              RollingUpdate
+                RollingUpdate
                     |
             +-------+-------+
             |               |
@@ -119,12 +150,12 @@ Pytest Tests          Docker Build       Kubernetes Validation
             +-------+-------+
                     |
                     v
-              FastAPI API
+               FastAPI API
                     |
           +---------+---------+
           |                   |
           v                   v
-   Application Metrics   Application Traffic
+ Application Metrics   Application Traffic
           |
           v
       Prometheus
@@ -132,13 +163,13 @@ Pytest Tests          Docker Build       Kubernetes Validation
     +-----+----------------------+
     |                            |
     v                            v
-PrometheusRule              Grafana
+PrometheusRule                 Grafana
     |
     v
 Alertmanager
     |
     v
-  Discord
+ Discord
 ```
 
 The current architecture represents components that have been implemented and validated.
@@ -151,21 +182,24 @@ The observability layer collects application-level and Kubernetes-level telemetr
 
 ```text
                     Kubernetes Cluster
+
                            |
+
              +-------------+-------------+
              |                           |
              v                           v
-       FastAPI Application        Kubernetes Resources
+
+      FastAPI Application        Kubernetes Resources
              |                           |
              |                           +-------------------+
              |                           |                   |
              v                           v                   v
-      /metrics/ endpoint         kube-state-metrics    node-exporter
+       /metrics/ endpoint        kube-state-metrics    node-exporter
              |                           |                   |
              +-------------+-------------+-------------------+
                            |
                            v
-                      Prometheus
+                       Prometheus
                            |
                 +----------+----------+
                 |                     |
@@ -214,7 +248,9 @@ The observability flow is:
 
 ```text
 Kubernetes
+
     |
+
     +----------------------+
     |                      |
     v                      v
@@ -235,17 +271,29 @@ Application and Kubernetes metrics are evaluated by Prometheus alerting rules.
 
 ```text
 Application / Kubernetes Metrics
+
               |
+
               v
+
           Prometheus
+
               |
+
               v
+
        PrometheusRule
+
               |
+
               v
-         Alertmanager
+
+        Alertmanager
+
               |
+
               v
+
            Discord
 ```
 
@@ -267,13 +315,21 @@ The target architecture represents the planned final state of the platform, incl
 
 ```text
 Developer
+
     |
+
     v
+
 GitHub Repository
+
     |
+
     v
+
 GitHub Actions CI/CD
+
     |
+
     +----------------------+----------------------+
     |                      |                      |
     v                      v                      v
@@ -291,7 +347,7 @@ Automated Tests       Docker Build       Kubernetes Validation
                 +----------+----------+
                 |                     |
                 v                     v
-             Stable                 Canary
+             Stable                Canary
                 |                     |
                 +----------+----------+
                            |
@@ -299,27 +355,27 @@ Automated Tests       Docker Build       Kubernetes Validation
                   Traffic Management
                            |
                            v
-                  Application Platform
+                   Application Platform
                            |
-            +--------------+--------------+
-            |              |              |
-            v              v              v
-         Metrics          Logs          Traces
-            |              |              |
-            v              v              v
-       Prometheus     Log Platform    Trace Platform
-            |
-            v
+             +-------------+-------------+
+             |             |             |
+             v             v             v
+          Metrics        Logs          Traces
+             |             |             |
+             v             v             v
+        Prometheus   Log Platform   Trace Platform
+             |
+             v
           Grafana
-            |
-            v
-       SLOs / Alerting
-            |
-            v
-    Automated Promotion
-            |
-            v
-     Automated Rollback
+             |
+             v
+        SLOs / Alerting
+             |
+             v
+     Automated Promotion
+             |
+             v
+      Automated Rollback
 ```
 
 Components are marked as implemented only after they have been deployed and validated.
@@ -493,7 +549,9 @@ Example output includes:
 
 ```text
 http_requests_total{method="GET",path="/",status="200"}
+
 http_requests_total{method="GET",path="/health",status="200"}
+
 http_requests_total{method="GET",path="/api/test-error",status="500"}
 ```
 
@@ -591,9 +649,13 @@ Kubernetes additionally enforces:
 
 ```text
 runAsUser: 10001
+
 runAsGroup: 10001
+
 runAsNonRoot: true
+
 allowPrivilegeEscalation: false
+
 capabilities:
   drop:
     - ALL
@@ -612,32 +674,59 @@ The CI workflow performs the following stages:
 
 ```text
 Checkout
+
    |
+
    v
+
 Setup Python 3.13
+
    |
+
    v
+
 Install Dependencies
+
    |
+
    v
+
 Run Pytest
+
    |
+
    v
+
 Build Docker Image
+
    |
+
    v
+
 Trivy Vulnerability Scan
+
    |
+
    v
+
 Validate Kubernetes Manifests
+
    |
+
    v
+
 Login to GHCR
+
    |
+
    v
+
 Tag Docker Image
+
    |
+
    v
+
 Push Docker Images
 ```
 
@@ -686,6 +775,12 @@ Example:
 ghcr.io/harshuk1702/devops-demo-api:<commit-sha>
 ```
 
+The currently deployed image is:
+
+```text
+ghcr.io/harshuk1702/devops-demo-api:f7fd3455c1079067c3ec7d640ec06a09519df668
+```
+
 This ensures that Kubernetes deployments reference a specific immutable image version rather than a mutable tag such as `latest`.
 
 ---
@@ -714,17 +809,31 @@ strategy:
 
 This ensures that Kubernetes maintains application availability during a rolling update.
 
+The current deployment state has been validated as:
+
+```text
+READY        2/2
+UP-TO-DATE   2
+AVAILABLE    2
+```
+
 ### Service
 
 The application is exposed internally through a Kubernetes `ClusterIP` Service.
 
 ```text
 Service
+
    |
+
    v
+
 devops-demo-api:8000
+
    |
+
    v
+
 Application Pods
 ```
 
@@ -733,15 +842,15 @@ Application Pods
 Each container requests:
 
 ```text
-CPU:     100m
-Memory:  128Mi
+CPU:    100m
+Memory: 128Mi
 ```
 
 and has limits of:
 
 ```text
-CPU:     500m
-Memory:  512Mi
+CPU:    500m
+Memory: 512Mi
 ```
 
 ### Readiness Probe
@@ -808,7 +917,9 @@ Expected deployment state:
 
 ```text
 READY        2/2
+
 UP-TO-DATE   2
+
 AVAILABLE    2
 ```
 
@@ -816,6 +927,37 @@ AVAILABLE    2
 
 ```powershell
 kubectl get deployment devops-demo-api -o jsonpath="{.spec.template.spec.containers[0].image}"
+```
+
+Expected format:
+
+```text
+ghcr.io/harshuk1702/devops-demo-api:<commit-sha>
+```
+
+### Verify Deployment Replica Metrics
+
+Prometheus exposes Kubernetes deployment metrics through kube-state-metrics.
+
+Query available replicas:
+
+```powershell
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_status_replicas_available%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+    Format-List
+```
+
+Query desired replicas:
+
+```powershell
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_spec_replicas%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+    Format-List
+```
+
+The validated healthy state is:
+
+```text
+Available replicas: 2
+Desired replicas:   2
 ```
 
 ### Verify Application Endpoints
@@ -850,7 +992,9 @@ Then access the application through:
 curl.exe http://localhost:8081/
 ```
 
-The local port is independent of the Kubernetes Service port. The format is:
+The local port is independent of the Kubernetes Service port.
+
+The format is:
 
 ```text
 <local-port>:<service-port>
@@ -872,6 +1016,7 @@ The application metrics include:
 
 ```text
 http_requests_total
+
 http_request_duration_seconds
 ```
 
@@ -879,6 +1024,7 @@ Kubernetes-level metrics are provided through:
 
 ```text
 kube-state-metrics
+
 node-exporter
 ```
 
@@ -886,26 +1032,37 @@ The observability pipeline is:
 
 ```text
 FastAPI Application
+
        |
+
        v
+
    /metrics/
+
        |
+
        v
+
 Kubernetes Service
+
        |
+
        v
+
    Prometheus
+
        |
+
        +------------------+
        |                  |
        v                  v
     Grafana         PrometheusRule
-                          |
-                          v
-                     Alertmanager
-                          |
-                          v
-                       Discord
+                         |
+                         v
+                    Alertmanager
+                         |
+                         v
+                      Discord
 ```
 
 Prometheus provides the metrics backend for both Grafana dashboards and alert evaluation.
@@ -933,13 +1090,21 @@ The Grafana architecture is:
 
 ```text
 Application Metrics
+
         |
+
         v
+
     Prometheus
+
         |
+
         v
+
       Grafana
+
         |
+
         +-----------------------+
         |                       |
         v                       v
@@ -969,6 +1134,13 @@ These metrics provide visibility into resources such as:
 
 These metrics are used by Prometheus for Kubernetes-level monitoring and alerting.
 
+For the `devops-demo-api` deployment, the following metrics have been verified through Prometheus:
+
+```text
+kube_deployment_status_replicas_available
+kube_deployment_spec_replicas
+```
+
 ### node-exporter
 
 `node-exporter` exposes node-level infrastructure metrics.
@@ -985,12 +1157,17 @@ The Kubernetes observability pipeline is:
 
 ```text
 Kubernetes Cluster
+
        |
+
        +-------------------------+
        |                         |
        v                         v
+
 kube-state-metrics          node-exporter
+
        |                         |
+
        +------------+------------+
                     |
                     v
@@ -1010,9 +1187,13 @@ The current application alerts are:
 
 ```text
 DevOpsDemoAPIHigh5xxRate
+
 DevOpsDemoAPIHighLatency
+
 DevOpsDemoAPIDown
+
 DevOpsDemoAPIHighCPU
+
 DevOpsDemoAPIHighMemory
 ```
 
@@ -1064,7 +1245,7 @@ http_request_duration_seconds_bucket
 
 The `DevOpsDemoAPIDown` alert compares available Kubernetes replicas with the desired replica count.
 
-The alert detects:
+The intended alert condition is:
 
 ```text
 available replicas < desired replicas
@@ -1075,6 +1256,27 @@ for:
 ```text
 1 minute
 ```
+
+The underlying Kubernetes metrics are:
+
+```text
+kube_deployment_status_replicas_available
+
+kube_deployment_spec_replicas
+```
+
+The deployment has been manually scaled to zero and restored to two replicas during validation.
+
+The healthy state was successfully restored:
+
+```text
+Desired replicas:   2
+Available replicas: 2
+```
+
+The Prometheus replica metrics were also verified.
+
+The alert was not observed in a firing state during the latest validation cycle, so additional controlled testing of the alert expression remains available if required.
 
 ### High CPU
 
@@ -1139,6 +1341,7 @@ The current Alertmanager route groups alerts by:
 
 ```text
 alertname
+
 service
 ```
 
@@ -1146,7 +1349,9 @@ The configured grouping behaviour includes:
 
 ```text
 groupWait: 5s
+
 groupInterval: 10s
+
 repeatInterval: 1h
 ```
 
@@ -1160,9 +1365,13 @@ The Discord notification includes:
 
 ```text
 Alert name
+
 Service
+
 Severity
+
 Summary
+
 Description
 ```
 
@@ -1288,8 +1497,11 @@ The alert transitions through:
 
 ```text
 pending
+
     |
+
     v
+
 firing
 ```
 
@@ -1307,35 +1519,99 @@ sendResolved: true
 
 a resolved notification can also be delivered to Discord.
 
+### Verify Application Availability Metrics
+
+The availability alert can be investigated directly through Prometheus.
+
+Query available replicas:
+
+```powershell
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_status_replicas_available%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+    Format-List
+```
+
+Query desired replicas:
+
+```powershell
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_spec_replicas%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+    Format-List
+```
+
+The healthy state should show:
+
+```text
+Available replicas: 2
+
+Desired replicas: 2
+```
+
+To inspect whether the availability alert is currently active:
+
+```powershell
+Invoke-RestMethod "http://localhost:9090/api/v1/alerts" |
+    Select-Object -ExpandProperty data |
+    Select-Object -ExpandProperty alerts |
+    Where-Object {
+        $_.labels.alertname -eq "DevOpsDemoAPIDown"
+    } |
+    Format-List
+```
+
+An empty result means that the alert is not currently present in the Prometheus active-alert response.
+
 ### Complete Alerting Flow
 
 The complete validation path is:
 
 ```text
 HTTP Request
+
     |
+
     v
+
 FastAPI
+
     |
+
     v
+
 HTTP 500
+
     |
+
     v
+
 Application Metric
+
     |
+
     v
+
 Prometheus
+
     |
+
     v
+
 PrometheusRule
+
     |
+
     v
+
 Alertmanager
+
     |
+
     v
+
 Discord
+
     |
+
     v
+
 Resolved Notification
 ```
 
@@ -1351,23 +1627,41 @@ The update process is:
 
 ```text
 Existing Version
+
       |
+
       v
+
 Create New Pod
+
       |
+
       v
+
 Readiness Probe
+
       |
+
       v
+
 New Pod Becomes Ready
+
       |
+
       v
+
 Terminate Old Pod
+
       |
+
       v
+
 Repeat
+
       |
+
       v
+
 New Version Fully Deployed
 ```
 
@@ -1389,43 +1683,85 @@ A previous revision can be rolled back using:
 kubectl rollout undo deployment/devops-demo-api
 ```
 
+The current deployment strategy is:
+
+```text
+RollingUpdate
+
+maxUnavailable: 0
+
+maxSurge: 1
+```
+
 ---
 
 ## Repository Structure
 
 ```text
 production-grade-devops-platform/
+
 |
+
 ├── .github/
+
 │   └── workflows/
+
 │       └── ci.yml
+
 │
+
 ├── application/
+
 │   ├── app/
+
 │   │   ├── __init__.py
+
 │   │   └── main.py
+
 │   │
+
 │   ├── tests/
+
 │   │   ├── __init__.py
+
 │   │   └── test_api.py
+
 │   │
+
 │   ├── Dockerfile
+
 │   ├── pytest.ini
+
 │   └── requirements.txt
+
 │
+
 ├── docs/
+
 │
+
 ├── k8s/
+
 │   ├── alertmanagerconfig.yaml
+
 │   ├── deployment.yaml
+
 │   ├── monitoring-values.yaml
+
 │   ├── prometheusrule.yaml
+
 │   └── service.yaml
+
 │
+
 ├── scripts/
+
 │   └── deploy.ps1
+
 │
+
 ├── .gitignore
+
 └── README.md
 ```
 
@@ -1485,8 +1821,12 @@ production-grade-devops-platform/
 - [x] Discord notifications
 - [x] Alert recovery notifications
 - [x] Latency monitoring
-- [ ] SLOs
-- [ ] Advanced SLO-based alerting
+- [x] CPU monitoring
+- [x] Memory monitoring
+- [x] Application availability monitoring
+- [ ] Service-level objectives (SLOs)
+- [ ] SLO-based alerting
+- [ ] Advanced reliability monitoring
 - [ ] Distributed tracing
 
 ### Phase 6 — Progressive Delivery
@@ -1538,71 +1878,317 @@ The platform currently demonstrates:
 
 ```text
 Application
+
     +
+
 Testing
+
     +
+
 Containerization
+
     +
+
 Container Security
+
     +
+
 CI/CD
+
     +
+
 Vulnerability Scanning
+
     +
+
 Container Registry
+
     +
+
 Kubernetes
+
     +
+
 Rolling Updates
+
     +
+
 Health Checks
+
     +
+
 Application Metrics
+
     +
+
 Kubernetes Metrics
+
     +
+
 Prometheus
+
     +
+
 Grafana
+
     +
+
 PrometheusRule
+
     +
+
 Alertmanager
+
     +
+
 Discord Notifications
+
     +
+
 Alert Recovery
+```
+
+The current Kubernetes deployment has also been validated after controlled scaling:
+
+```text
+Deployment: devops-demo-api
+
+Initial state:
+2/2 replicas available
+
+Controlled test:
+scaled to 0 replicas
+
+Observed:
+0/0 replicas
+No application pods
+
+Recovery:
+scaled back to 2 replicas
+
+Final state:
+2/2 replicas available
+2/2 pods running
+```
+
+Prometheus successfully exposes the Kubernetes deployment state through:
+
+```text
+kube_deployment_status_replicas_available
+
+kube_deployment_spec_replicas
+```
+
+The final healthy state is:
+
+```text
+Available replicas: 2
+
+Desired replicas: 2
 ```
 
 The platform has now progressed beyond basic application monitoring into a broader observability foundation covering:
 
 ```text
 Application
+
     |
+
     +----------------------+
     |                      |
     v                      v
+
 Application Metrics   Kubernetes Metrics
+
     |                      |
+
     +----------+-----------+
+
                |
+
                v
+
            Prometheus
+
                |
+
         +------+------+
         |             |
         v             v
-     Grafana      Alerting
-                     |
-                     v
-                Alertmanager
-                     |
-                     v
-                  Discord
+
+     Grafana       Alerting
+
+                       |
+
+                       v
+
+                  Alertmanager
+
+                       |
+
+                       v
+
+                    Discord
 ```
 
-The next major milestone is **advanced observability and reliability engineering**, beginning with service-level objectives (SLOs), SLO-based alerting, centralized logging, and distributed tracing.
+The next major milestone is **advanced observability and reliability engineering**.
 
-After the observability layer is further matured, the project will progress toward **progressive delivery**, including canary deployments, traffic management, automated promotion, and automated rollback.
+---
+
+## Next Task
+
+The next implementation task starts at:
+
+```text
+PHASE 5 — OBSERVABILITY
+
+        |
+
+        v
+
+SERVICE-LEVEL OBJECTIVES (SLOs)
+
+        |
+
+        v
+
+SLO ERROR BUDGETS
+
+        |
+
+        v
+
+SLO-BASED ALERTING
+
+        |
+
+        v
+
+ADVANCED RELIABILITY MONITORING
+```
+
+The immediate next task is therefore:
+
+**Implement Service-Level Objectives (SLOs) for `devops-demo-api`.**
+
+The SLO implementation should build on the existing Prometheus metrics and Kubernetes observability rather than replacing the current monitoring system.
+
+The first SLO should focus on application availability.
+
+The planned flow is:
+
+```text
+Existing Application
+
+        |
+
+        v
+
+Existing Prometheus Metrics
+
+        |
+
+        v
+
+Availability SLI
+
+        |
+
+        v
+
+Availability SLO
+
+        |
+
+        v
+
+Error Budget
+
+        |
+
+        v
+
+SLO-Based Alert
+
+        |
+
+        v
+
+Alertmanager
+
+        |
+
+        v
+
+Discord
+```
+
+The SLO work should be implemented and validated before moving to centralized logging or distributed tracing.
+
+After SLOs and reliability monitoring are completed, the project will progress toward:
+
+```text
+Centralized Logging
+
+        |
+
+        v
+
+Distributed Tracing
+
+        |
+
+        v
+
+Advanced Observability
+
+        |
+
+        v
+
+Canary Deployment
+
+        |
+
+        v
+
+Traffic Management
+
+        |
+
+        v
+
+Automated Promotion
+
+        |
+
+        v
+
+Automated Rollback
+```
+
+This keeps the project progression logical:
+
+```text
+Application
+    ↓
+Containerization
+    ↓
+CI/CD
+    ↓
+Kubernetes
+    ↓
+Observability
+    ↓
+Alerting
+    ↓
+SLOs / Reliability Engineering
+    ↓
+Logging / Tracing
+    ↓
+Progressive Delivery
+    ↓
+Automated Rollback
+```
 
 ---
