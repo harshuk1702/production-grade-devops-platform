@@ -7,3 +7,12 @@
     alertmanagerConfigNamespaceSelector:
       matchNames:
         - monitoring
+
+grafana:
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.loki.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
