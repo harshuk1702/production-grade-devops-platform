@@ -1,6 +1,6 @@
 # Production-Grade DevOps Platform
 
-A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, progressive delivery, and observability.
+A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, observability, reliability engineering, centralized logging, and progressive delivery.
 
 The platform is being built incrementally. Each stage is implemented, tested, validated, documented, and committed to Git.
 
@@ -8,7 +8,7 @@ The platform is being built incrementally. Each stage is implemented, tested, va
 
 ## Current Status
 
-The application delivery platform, containerization, CI/CD, security, Kubernetes deployment, application metrics, Prometheus monitoring, Grafana dashboards, Kubernetes-level observability, Prometheus alerting, Alertmanager routing, and Discord notifications have been implemented and validated.
+The application delivery platform, containerization, CI/CD, security, Kubernetes deployment, application metrics, Prometheus monitoring, Grafana dashboards, Kubernetes-level observability, Prometheus alerting, Alertmanager routing, Discord notifications, SLO-based reliability monitoring, and centralized logging have been implemented and validated.
 
 The current Kubernetes deployment is healthy with:
 
@@ -20,13 +20,7 @@ Ready: 2/2
 Available: 2
 ```
 
-The deployed application image currently uses an immutable commit-SHA tag:
-
-```text
-ghcr.io/harshuk1702/devops-demo-api:f7fd3455c1079067c3ec7d640ec06a09519df668
-```
-
-The deployment uses a `RollingUpdate` strategy with:
+The deployment uses an immutable commit-SHA container image and a `RollingUpdate` strategy with:
 
 ```text
 maxUnavailable: 0
@@ -61,6 +55,15 @@ maxSurge: 1
 - AlertmanagerConfig selection using Kubernetes labels
 - AlertmanagerConfig namespace selection
 - Persistent Alertmanager configuration through Helm values
+- SLO recording rules
+- Availability and error-rate SLIs
+- Error-budget calculation
+- Error-budget burn-rate alerting
+- SLO violation alerting
+- Loki centralized logging
+- Grafana Alloy log collection
+- Grafana Loki datasource
+- Kubernetes pod log collection and visualization
 
 ### Implemented Observability
 
@@ -72,6 +75,7 @@ maxSurge: 1
 - Application latency metrics
 - HTTP 5xx error monitoring
 - Application availability monitoring
+- Application latency monitoring
 - Application latency alerting
 - CPU monitoring and alerting
 - Memory monitoring and alerting
@@ -79,6 +83,16 @@ maxSurge: 1
 - Alertmanager routing
 - Discord alert notifications
 - Alert recovery notifications
+- Service-level objectives (SLOs)
+- Availability SLI
+- Error-rate SLI
+- Error-budget calculation
+- Error-budget burn-rate monitoring
+- SLO violation alerting
+- Centralized Kubernetes pod logging
+- Loki log storage
+- Grafana Alloy log collection
+- Grafana Explore log querying
 
 ### Implemented Reliability Engineering
 
@@ -90,15 +104,45 @@ maxSurge: 1
 - Error-budget burn-rate alerting
 - SLO violation alerting
 - SLO validation through Prometheus queries
+- Reliability monitoring based on application request metrics
+
+### Implemented Centralized Logging
+
+- Grafana Loki
+- Grafana Alloy
+- Kubernetes pod log discovery
+- Kubernetes pod log relabeling
+- Centralized log ingestion
+- Grafana Loki datasource
+- Grafana Explore log querying
+- End-to-end log validation from Kubernetes pod to Grafana
+
+The validated logging flow is:
+
+```text
+Kubernetes Pod
+      |
+      v
+Grafana Alloy
+      |
+      v
+Grafana Loki
+      |
+      v
+Grafana Explore
+```
 
 ### Planned
 
-- Centralized logging
 - Distributed tracing
+- Trace-to-log correlation
+- Tempo or another distributed tracing backend
 - Canary deployments
 - Traffic management
-- Automated promotion and rollback
+- Automated promotion
+- Automated rollback
 - Remote/cloud Kubernetes deployment
+- Production-scale configuration management
 
 ---
 
@@ -106,7 +150,7 @@ maxSurge: 1
 
 ### Current Architecture
 
-The current platform implements the application delivery pipeline and the initial observability and alerting platform.
+The current platform implements the application delivery pipeline together with metrics, monitoring, alerting, reliability engineering, and centralized logging.
 
 ```text
 Developer
@@ -126,7 +170,7 @@ Pytest Tests          Docker Build       Kubernetes Validation
                     Trivy Security Scan
                            |
                            v
-                  GitHub Container Registry
+                 GitHub Container Registry
                            |
                            v
                        Kubernetes
@@ -152,7 +196,7 @@ Pytest Tests          Docker Build       Kubernetes Validation
           +---------+---------+
           |                   |
           v                   v
- Application Metrics   Application Traffic
+ Application Metrics    Application Traffic
           |
           v
       Prometheus
@@ -166,7 +210,19 @@ PrometheusRule                Grafana
 Alertmanager
     |
     v
-Discord
+ Discord
+
+
+Kubernetes Pod Logs
+        |
+        v
+ Grafana Alloy
+        |
+        v
+   Grafana Loki
+        |
+        v
+Grafana Explore
 ```
 
 The current architecture represents components that have been implemented and validated.
@@ -175,40 +231,51 @@ The current architecture represents components that have been implemented and va
 
 ## Observability Architecture
 
-The observability layer collects application-level and Kubernetes-level telemetry and provides visualization and alerting.
+The observability layer collects application-level metrics, Kubernetes-level metrics, and Kubernetes pod logs.
 
 ```text
-                    Kubernetes Cluster
-                           |
-             +-------------+-------------+
-             |                           |
-             v                           v
-      FastAPI Application        Kubernetes Resources
-             |                           |
-             |                           +-------------------+
-             |                           |                   |
-             v                           v                   v
-       /metrics/ endpoint       kube-state-metrics    node-exporter
-             |                           |                   |
-             +-------------+-------------+-------------------+
-                           |
-                           v
-                       Prometheus
-                           |
-                +----------+----------+
-                |                     |
-                v                     v
-             Grafana             PrometheusRule
-          Dashboards                  |
-                |                     v
-                |                Alertmanager
-                |                     |
-                |                     v
-                |                  Discord
-                |
-                v
-        Metrics Visualization
+                         Kubernetes Cluster
+                                |
+                +---------------+---------------+
+                |                               |
+                v                               v
+        FastAPI Application            Kubernetes Resources
+                |                               |
+                |                       +-------+-------+
+                |                       |               |
+                v                       v               v
+          /metrics/              kube-state-metrics  node-exporter
+                |                       |               |
+                +-----------+-----------+---------------+
+                            |
+                            v
+                        Prometheus
+                            |
+                 +----------+----------+
+                 |                     |
+                 v                     v
+              Grafana             PrometheusRule
+           Dashboards                   |
+                                        v
+                                  Alertmanager
+                                        |
+                                        v
+                                     Discord
+
+
+                 Kubernetes Pod Logs
+                         |
+                         v
+                   Grafana Alloy
+                         |
+                         v
+                    Grafana Loki
+                         |
+                         v
+                   Grafana Explore
 ```
+
+The platform therefore separates metrics and logs while providing a common visualization layer through Grafana.
 
 ### Application Observability
 
@@ -226,6 +293,17 @@ The primary application metrics are:
 http_requests_total
 http_request_duration_seconds
 ```
+
+These metrics provide the foundation for:
+
+- Application dashboards
+- HTTP 5xx monitoring
+- Latency monitoring
+- Availability measurement
+- Error-rate measurement
+- SLO calculations
+- Error-budget calculations
+- SLO-based alerting
 
 ### Kubernetes Observability
 
@@ -257,6 +335,56 @@ kube-state-metrics    node-exporter
             Grafana
 ```
 
+### Centralized Logging
+
+Kubernetes pod logs are collected by Grafana Alloy and forwarded to Grafana Loki.
+
+The logging pipeline is:
+
+```text
+Kubernetes Pods
+      |
+      v
+Kubernetes Pod Discovery
+      |
+      v
+Grafana Alloy
+      |
+      v
+Grafana Loki
+      |
+      v
+Grafana
+      |
+      v
+Grafana Explore
+```
+
+Grafana Alloy uses Kubernetes service discovery to discover pod log targets and applies Kubernetes metadata such as:
+
+```text
+namespace
+pod
+container
+app
+```
+
+The collected logs are forwarded to:
+
+```text
+http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
+```
+
+This is an internal Kubernetes service endpoint and is not exposed externally.
+
+A Loki query can be used in Grafana Explore to inspect pod logs:
+
+```text
+{pod="devops-demo-api-<pod-id>"}
+```
+
+The centralized logging pipeline was validated using a temporary Kubernetes test pod. A known test log entry was emitted, ingested by Alloy, stored by Loki, and successfully queried from Grafana Explore.
+
 ### Alerting Architecture
 
 Application and Kubernetes metrics are evaluated by Prometheus alerting rules.
@@ -284,14 +412,121 @@ The current alerting layer covers:
 - Application availability
 - High CPU usage
 - High memory usage
+- SLO violations
+- Error-budget burn rate
 
 Alert recovery notifications are enabled through Alertmanager.
 
 ---
 
+## Service-Level Objectives
+
+The platform includes SLO-based reliability monitoring built on the existing Prometheus metrics.
+
+The SLO pipeline is:
+
+```text
+Application Metrics
+        |
+        v
+Prometheus
+        |
+        v
+Availability / Error-Rate SLI
+        |
+        v
+SLO Recording Rules
+        |
+        v
+Error Budget
+        |
+        v
+Burn-Rate Evaluation
+        |
+        v
+SLO Alert
+        |
+        v
+Alertmanager
+        |
+        v
+Discord
+```
+
+### Availability SLI
+
+Application availability is measured using successful request behaviour from the application metrics.
+
+The availability SLI provides a measurable representation of the percentage of requests that successfully complete.
+
+### Error-Rate SLI
+
+The error-rate SLI measures the proportion of HTTP 5xx responses relative to total application requests.
+
+The primary metric is:
+
+```text
+http_requests_total
+```
+
+The error-rate calculation can be represented conceptually as:
+
+```text
+5xx requests / total requests
+```
+
+### Error Budget
+
+The error budget represents the amount of unreliability permitted by the configured SLO target.
+
+Conceptually:
+
+```text
+Error Budget = 1 - SLO Target
+```
+
+The error budget can then be used to evaluate whether the service is consuming reliability capacity too quickly.
+
+### Burn-Rate Monitoring
+
+Burn-rate monitoring evaluates how quickly the application is consuming its available error budget.
+
+The platform uses Prometheus recording rules and alerting rules to identify excessive error-budget consumption.
+
+This provides an operational signal beyond simple threshold-based monitoring.
+
+### SLO Validation
+
+SLO behaviour is validated directly through Prometheus queries and controlled application traffic.
+
+The reliability monitoring flow is:
+
+```text
+Controlled Application Traffic
+          |
+          v
+    Application Metrics
+          |
+          v
+       Prometheus
+          |
+          v
+      SLO Rules
+          |
+          +----------------+
+          |                |
+          v                v
+     Error Budget      Burn Rate
+                           |
+                           v
+                      SLO Alert
+```
+
+---
+
 ## Target Architecture
 
-The target architecture represents the planned final state of the platform, including progressive delivery, centralized logging, SLOs, advanced alerting, and automated rollback.
+The target architecture represents the planned final state of the platform, including distributed tracing, progressive delivery, centralized observability, SLO-driven operations, and automated rollback.
 
 ```text
 Developer
@@ -319,7 +554,7 @@ Automated Tests       Docker Build       Kubernetes Validation
                 +----------+----------+
                 |                     |
                 v                     v
-             Stable               Canary
+             Stable                Canary
                 |                     |
                 +----------+----------+
                            |
@@ -327,7 +562,7 @@ Automated Tests       Docker Build       Kubernetes Validation
                   Traffic Management
                            |
                            v
-                   Application Platform
+                  Application Platform
                            |
              +-------------+-------------+
              |             |             |
@@ -335,22 +570,30 @@ Automated Tests       Docker Build       Kubernetes Validation
           Metrics        Logs         Traces
              |             |             |
              v             v             v
-        Prometheus   Log Platform   Trace Platform
-             |
-             v
-          Grafana
-             |
-             v
-        SLOs / Alerting
-             |
-             v
-     Automated Promotion
-             |
-             v
-      Automated Rollback
+        Prometheus       Loki          Tempo
+             |             |             |
+             +-------------+-------------+
+                           |
+                           v
+                        Grafana
+                           |
+                    +------+------+
+                    |             |
+                    v             v
+                  SLOs        Alerting
+                    |             |
+                    +------+------+
+                           |
+                           v
+                  Automated Promotion
+                           |
+                           v
+                   Automated Rollback
 ```
 
 Components are marked as implemented only after they have been deployed and validated.
+
+The target architecture is intentionally ahead of the current implementation. Distributed tracing and progressive delivery remain future milestones.
 
 ---
 
@@ -410,24 +653,34 @@ Components are marked as implemented only after they have been deployed and vali
 - Application metrics
 - Kubernetes metrics
 - HTTP 5xx monitoring
-- Latency monitoring
+- p95 latency monitoring
 - CPU monitoring
 - Memory monitoring
 - Application availability monitoring
+- Service-level objectives
+- Error-budget monitoring
+- Burn-rate monitoring
+- SLO-based alerting
 - Discord alert notifications
 - Alert recovery notifications
+- Grafana Loki
+- Grafana Alloy
+- Centralized Kubernetes pod logging
+- Grafana Explore
 
 ### Planned Observability
 
-- Centralized logging
-- Service-level objectives (SLOs)
-- Advanced SLO-based alerting
 - Distributed tracing
+- Tempo or equivalent trace backend
+- Trace collection
+- Trace visualization
+- Trace-to-log correlation
 
 ### Planned Progressive Delivery
 
 - Canary deployments
 - Traffic management
+- Canary validation
 - Automated promotion
 - Automated rollback
 
@@ -712,11 +965,7 @@ Example:
 ghcr.io/harshuk1702/devops-demo-api:<commit-sha>
 ```
 
-The currently deployed image is:
-
-```text
-ghcr.io/harshuk1702/devops-demo-api:f7fd3455c1079067c3ec7d640ec06a09519df668
-```
+The currently deployed image should always be verified directly from Kubernetes rather than hard-coded in this README.
 
 This ensures that Kubernetes deployments reference a specific immutable image version rather than a mutable tag such as `latest`.
 
@@ -871,14 +1120,14 @@ Prometheus exposes Kubernetes deployment metrics through kube-state-metrics.
 Query available replicas:
 
 ```powershell
-(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_status_replicas_available%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_status_replicas_available{namespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22}").data.result |
     Format-List
 ```
 
 Query desired replicas:
 
 ```powershell
-(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_spec_replicas%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_spec_replicas{namespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22}").data.result |
     Format-List
 ```
 
@@ -972,7 +1221,7 @@ Kubernetes Service
        +------------------+
        |                  |
        v                  v
-    Grafana         PrometheusRule
+    Grafana          PrometheusRule
                          |
                          v
                     Alertmanager
@@ -990,6 +1239,8 @@ Prometheus provides the metrics backend for both Grafana dashboards and alert ev
 Grafana provides visualization for the platform's application and Kubernetes observability data.
 
 Prometheus is configured as the metrics data source.
+
+Loki is configured as the centralized logging data source.
 
 The dashboards provide visibility into areas such as:
 
@@ -1017,9 +1268,173 @@ Application Metrics
         |                       |
         v                       v
 Application Dashboards   Kubernetes Dashboards
+
+
+Kubernetes Pod Logs
+        |
+        v
+    Grafana Alloy
+        |
+        v
+      Loki
+        |
+        v
+      Grafana
+        |
+        v
+   Grafana Explore
 ```
 
 Grafana is used for visualization and operational investigation, while Prometheus and Alertmanager handle metric evaluation and alert delivery.
+
+Grafana Explore provides interactive querying of Loki logs.
+
+Example LogQL query:
+
+```text
+{pod="devops-demo-api-<pod-id>"}
+```
+
+---
+
+## Loki Centralized Logging
+
+Grafana Loki provides centralized log storage for Kubernetes pod logs.
+
+Grafana Alloy runs as a Kubernetes DaemonSet and collects logs from pods across the cluster.
+
+The logging architecture is:
+
+```text
+Kubernetes Pods
+      |
+      v
+Kubernetes Discovery
+      |
+      v
+Grafana Alloy
+      |
+      v
+Grafana Loki
+      |
+      v
+Grafana Loki Datasource
+      |
+      v
+Grafana Explore
+```
+
+### Grafana Alloy
+
+The Alloy configuration is stored in:
+
+```text
+k8s/alloy-values.yaml
+```
+
+The configuration:
+
+- Discovers Kubernetes pods
+- Discovers pod log targets
+- Relabels Kubernetes metadata
+- Collects pod logs
+- Forwards logs to Loki
+
+Relevant labels include:
+
+```text
+namespace
+pod
+container
+app
+```
+
+Alloy runs as a DaemonSet so that log collection is distributed across Kubernetes nodes.
+
+### Loki
+
+Loki runs in the `loki` namespace.
+
+The Kubernetes service is:
+
+```text
+loki.loki.svc.cluster.local:3100
+```
+
+Alloy forwards logs to:
+
+```text
+http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
+```
+
+### Grafana Loki Datasource
+
+The Loki datasource is configured declaratively through:
+
+```text
+k8s/monitoring-values.yaml
+```
+
+The configured datasource is:
+
+```yaml
+grafana:
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.loki.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+```
+
+This allows Grafana to query Loki through the Kubernetes service.
+
+### Verify Logs in Grafana
+
+Open Grafana and navigate to:
+
+```text
+Explore
+```
+
+Select:
+
+```text
+Loki
+```
+
+A basic query is:
+
+```text
+{pod="devops-demo-api-<pod-id>"}
+```
+
+Kubernetes metadata can also be used to narrow the query.
+
+Example:
+
+```text
+{namespace="default"}
+```
+
+The centralized logging pipeline was validated end-to-end:
+
+```text
+Kubernetes Pod
+      |
+      v
+Grafana Alloy
+      |
+      v
+Grafana Loki
+      |
+      v
+Grafana Explore
+      |
+      v
+Visible Pod Logs
+```
 
 ---
 
@@ -1086,7 +1501,7 @@ kube-state-metrics          node-exporter
 
 A PrometheusRule is used to detect application and infrastructure conditions that require attention.
 
-The current application alerts are:
+The current application alerts include:
 
 ```text
 DevOpsDemoAPIHigh5xxRate
@@ -1095,6 +1510,8 @@ DevOpsDemoAPIDown
 DevOpsDemoAPIHighCPU
 DevOpsDemoAPIHighMemory
 ```
+
+SLO-based rules additionally evaluate reliability and error-budget conditions.
 
 ### High 5xx Error Rate
 
@@ -1117,6 +1534,16 @@ for:
 ```text
 1 minute
 ```
+
+This alert was validated by generating controlled HTTP 500 traffic through:
+
+```text
+/api/test-error
+```
+
+The alert transitioned into a firing state and generated a Discord notification.
+
+After the error traffic stopped and the evaluation window cleared, the alert resolved and a recovery notification was received.
 
 ### High Latency
 
@@ -1174,8 +1601,6 @@ Available replicas: 2
 
 The Prometheus replica metrics were also verified.
 
-The alert was not observed in a firing state during the latest validation cycle, so additional controlled testing of the alert expression remains available if required.
-
 ### High CPU
 
 The `DevOpsDemoAPIHighCPU` alert detects when a pod uses more than 80% of its requested CPU.
@@ -1194,6 +1619,40 @@ The condition must remain true for:
 
 ```text
 5 minutes
+```
+
+### SLO-Based Alerting
+
+The platform also evaluates SLO reliability conditions using Prometheus recording and alerting rules.
+
+The SLO alerting flow is:
+
+```text
+Application Requests
+        |
+        v
+http_requests_total
+        |
+        v
+Availability / Error-Rate SLI
+        |
+        v
+SLO Recording Rules
+        |
+        v
+Error Budget
+        |
+        v
+Burn Rate
+        |
+        v
+SLO Violation Alert
+        |
+        v
+Alertmanager
+        |
+        v
+Discord
 ```
 
 ---
@@ -1223,11 +1682,15 @@ alertmanagerConfigSelector:
     alertmanagerConfig: devops-demo
 ```
 
-The namespace selector allows Alertmanager to discover matching `AlertmanagerConfig` resources across namespaces:
+The current namespace selector is restricted to the `monitoring` namespace:
 
 ```yaml
-alertmanagerConfigNamespaceSelector: {}
+alertmanagerConfigNamespaceSelector:
+  matchNames:
+    - monitoring
 ```
+
+This matches the current project configuration and allows Alertmanager to discover the intended `AlertmanagerConfig` resource in the `monitoring` namespace.
 
 The application alerts are routed using the service label:
 
@@ -1290,7 +1753,7 @@ apiURL:
   key: webhook-url
 ```
 
-This prevents the actual Discord webhook URL from being committed to Git.
+The actual webhook value is intentionally not documented or committed to Git.
 
 ---
 
@@ -1310,7 +1773,10 @@ alertmanager:
     alertmanagerConfigSelector:
       matchLabels:
         alertmanagerConfig: devops-demo
-    alertmanagerConfigNamespaceSelector: {}
+
+    alertmanagerConfigNamespaceSelector:
+      matchNames:
+        - monitoring
 ```
 
 This ensures that the Alertmanager configuration selection survives a Helm-based monitoring deployment or upgrade.
@@ -1414,14 +1880,14 @@ The availability alert can be investigated directly through Prometheus.
 Query available replicas:
 
 ```powershell
-(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_status_replicas_available%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_status_replicas_available{namespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22}").data.result |
     Format-List
 ```
 
 Query desired replicas:
 
 ```powershell
-(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_spec_replicas%7Bnamespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22%7D").data.result |
+(Invoke-RestMethod "http://localhost:9090/api/v1/query?query=kube_deployment_spec_replicas{namespace%3D%22default%22%2Cdeployment%3D%22devops-demo-api%22}").data.result |
     Format-List
 ```
 
@@ -1445,6 +1911,23 @@ Invoke-RestMethod "http://localhost:9090/api/v1/alerts" |
 ```
 
 An empty result means that the alert is not currently present in the Prometheus active-alert response.
+
+### Verify SLO Rules
+
+SLO recording rules can be inspected directly through the Prometheus expression interface or API.
+
+The reliability validation should verify:
+
+```text
+Availability SLI
+Error-Rate SLI
+SLO Target
+Error Budget
+Burn Rate
+SLO Alert State
+```
+
+The exact recording-rule names should be verified from the current `k8s/prometheusrule.yaml` rather than hard-coded into operational documentation.
 
 ### Complete Alerting Flow
 
@@ -1479,6 +1962,89 @@ Resolved Notification
 ```
 
 This validates the complete application-to-notification observability pipeline.
+
+---
+
+## Logging Validation
+
+The centralized logging pipeline can be validated independently from metric alerting.
+
+The expected architecture is:
+
+```text
+Kubernetes Pod
+      |
+      v
+Grafana Alloy
+      |
+      v
+Grafana Loki
+      |
+      v
+Grafana Explore
+```
+
+### Verify Loki
+
+Check the Loki pod:
+
+```powershell
+kubectl get pods -n loki
+```
+
+Check the Loki service:
+
+```powershell
+kubectl get svc -n loki
+```
+
+### Verify Grafana Alloy
+
+Check the Alloy DaemonSet:
+
+```powershell
+kubectl get daemonset -n logging
+```
+
+Check Alloy pods:
+
+```powershell
+kubectl get pods -n logging
+```
+
+### Verify Logs in Grafana
+
+Open Grafana and select:
+
+```text
+Explore
+```
+
+Choose the Loki datasource and run:
+
+```text
+{pod="devops-demo-api-<pod-id>"}
+```
+
+The query should return log entries generated by the Kubernetes pod.
+
+The end-to-end logging pipeline has been validated using a controlled test log:
+
+```text
+Kubernetes Pod
+      |
+      v
+Alloy
+      |
+      v
+Loki
+      |
+      v
+Grafana Explore
+      |
+      v
+Test Log Successfully Visible
+```
 
 ---
 
@@ -1564,6 +2130,7 @@ production-grade-devops-platform/
 │
 ├── k8s/
 │   ├── alertmanagerconfig.yaml
+│   ├── alloy-values.yaml
 │   ├── deployment.yaml
 │   ├── monitoring-values.yaml
 │   ├── prometheusrule.yaml
@@ -1617,7 +2184,7 @@ production-grade-devops-platform/
 - [x] RollingUpdate strategy
 - [ ] ConfigMap / application Secrets
 
-### Phase 5 — Observability
+### Phase 5 — Observability and Reliability
 
 - [x] Application metrics
 - [x] Prometheus
@@ -1625,7 +2192,6 @@ production-grade-devops-platform/
 - [x] Kubernetes metrics
 - [x] kube-state-metrics
 - [x] node-exporter
-- [ ] Centralized logging
 - [x] HTTP 5xx monitoring
 - [x] PrometheusRule
 - [x] Alertmanager
@@ -1636,8 +2202,16 @@ production-grade-devops-platform/
 - [x] Memory monitoring
 - [x] Application availability monitoring
 - [x] Service-level objectives (SLOs)
+- [x] Availability SLI
+- [x] Error-rate SLI
+- [x] Error-budget calculation
 - [x] SLO-based alerting
+- [x] Burn-rate monitoring
 - [x] Advanced reliability monitoring
+- [x] Centralized logging
+- [x] Grafana Loki
+- [x] Grafana Alloy
+- [x] Grafana log visualization
 - [ ] Distributed tracing
 
 ### Phase 6 — Progressive Delivery
@@ -1683,7 +2257,7 @@ This approach keeps each stage reproducible and provides a clear Git history of 
 
 ## Current Milestone
 
-The application delivery platform and initial observability foundation are complete.
+The application delivery platform, Kubernetes deployment, monitoring, alerting, reliability engineering, and centralized logging foundation are complete.
 
 The platform currently demonstrates:
 
@@ -1723,6 +2297,22 @@ Alertmanager
 Discord Notifications
     +
 Alert Recovery
+    +
+Service-Level Objectives
+    +
+Availability / Error-Rate SLIs
+    +
+Error Budgets
+    +
+Burn-Rate Monitoring
+    +
+SLO-Based Alerting
+    +
+Grafana Loki
+    +
+Grafana Alloy
+    +
+Centralized Kubernetes Logging
 ```
 
 The current Kubernetes deployment has also been validated after controlled scaling:
@@ -1731,27 +2321,20 @@ The current Kubernetes deployment has also been validated after controlled scali
 Deployment: devops-demo-api
 
 Initial state:
-
 2/2 replicas available
 
 Controlled test:
-
 scaled to 0 replicas
 
 Observed:
-
 0/0 replicas
-
 No application pods
 
 Recovery:
-
 scaled back to 2 replicas
 
 Final state:
-
 2/2 replicas available
-
 2/2 pods running
 ```
 
@@ -1769,40 +2352,62 @@ Available replicas: 2
 Desired replicas: 2
 ```
 
-The platform has now progressed beyond basic application monitoring into a broader observability foundation covering:
+The platform has progressed beyond basic application monitoring into a broader observability and reliability foundation covering:
 
 ```text
 Application
     |
-    +----------------------+
-    |                      |
-    v                      v
-Application Metrics   Kubernetes Metrics
-    |                      |
-    +----------+-----------+
-               |
-               v
-           Prometheus
-               |
-         +-----+-----+
-         |           |
-         v           v
-      Grafana      Alerting
-                       |
-                       v
-                  Alertmanager
-                       |
-                       v
-                    Discord
+    +----------------------+----------------------+
+    |                      |                      |
+    v                      v                      v
+Application Metrics   Kubernetes Metrics    Kubernetes Logs
+    |                      |                      |
+    +----------+-----------+                      |
+               |                                  |
+               v                                  v
+           Prometheus                        Grafana Alloy
+               |                                  |
+         +-----+-----+                            v
+         |           |                         Loki
+         v           v                            |
+      Grafana     Alerting                        |
+                     |                            |
+                     v                            |
+                Alertmanager                      |
+                     |                            |
+                     v                            |
+                  Discord                         |
+                                                  v
+                                             Grafana Explore
 ```
 
-The next major milestone is **advanced observability and reliability engineering**.
+The project has now established a complete baseline for:
+
+```text
+Metrics
+    +
+Dashboards
+    +
+Alerting
+    +
+Notifications
+    +
+SLOs
+    +
+Error Budgets
+    +
+Reliability Monitoring
+    +
+Centralized Logging
+```
+
+The next major milestone is **distributed tracing and deeper observability correlation**.
 
 ---
 
 ## Next Task
 
-The next implementation task starts at:
+The next implementation task starts with:
 
 ```text
 PHASE 5 — OBSERVABILITY
@@ -1810,70 +2415,68 @@ PHASE 5 — OBSERVABILITY
         |
         v
 
-SERVICE-LEVEL OBJECTIVES (SLOs)
+DISTRIBUTED TRACING
 
         |
         v
 
-SLO ERROR BUDGETS
+TRACE COLLECTION
 
         |
         v
 
-SLO-BASED ALERTING
+TRACE VISUALIZATION
 
         |
         v
 
-ADVANCED RELIABILITY MONITORING
+METRICS / LOGS / TRACES CORRELATION
 ```
 
-The immediate next task is therefore:
+The immediate next task is:
 
-**Implement Service-Level Objectives (SLOs) for `devops-demo-api`.**
+**Implement distributed tracing for `devops-demo-api`.**
 
-The SLO implementation should build on the existing Prometheus metrics and Kubernetes observability rather than replacing the current monitoring system.
+The tracing implementation should build on the existing Prometheus, Grafana, Loki, and Grafana Alloy observability foundation rather than replacing the current monitoring and logging systems.
 
-The first SLO should focus on application availability.
-
-The planned flow is:
+The planned tracing flow is:
 
 ```text
-Existing Application
+Existing FastAPI Application
         |
         v
-Existing Prometheus Metrics
+OpenTelemetry Instrumentation
         |
         v
-Availability SLI
+Trace Data
         |
         v
-Availability SLO
+Trace Backend
         |
         v
-Error Budget
+Grafana
         |
-        v
-SLO-Based Alert
-        |
-        v
-Alertmanager
-        |
-        v
-Discord
+        +-------------------+
+        |                   |
+        v                   v
+     Metrics              Logs
+        |                   |
+        v                   v
+   Prometheus              Loki
+        \                   /
+         \                 /
+          +-------+-------+
+                  |
+                  v
+             Correlated
+            Observability
 ```
 
-The SLO work should be implemented and validated before moving to centralized logging or distributed tracing.
+The tracing milestone should provide visibility into request execution across application components and establish the foundation for metrics, logs, and traces correlation.
 
-After SLOs and reliability monitoring are completed, the project will progress toward:
+After distributed tracing is completed, the project will progress toward:
 
 ```text
-Centralized Logging
-        |
-        v
-Distributed Tracing
-        |
-        v
 Advanced Observability
         |
         v
@@ -1881,6 +2484,9 @@ Canary Deployment
         |
         v
 Traffic Management
+        |
+        v
+Canary Validation
         |
         v
 Automated Promotion
@@ -1893,42 +2499,32 @@ This keeps the project progression logical:
 
 ```text
 Application
-
     ↓
-
 Containerization
-
     ↓
-
 CI/CD
-
     ↓
-
 Kubernetes
-
     ↓
-
-Observability
-
+Metrics
     ↓
-
+Monitoring
+    ↓
 Alerting
-
     ↓
-
 SLOs / Reliability Engineering
-
     ↓
-
-Logging / Tracing
-
+Centralized Logging
     ↓
-
+Distributed Tracing
+    ↓
+Advanced Observability
+    ↓
 Progressive Delivery
-
     ↓
-
 Automated Rollback
 ```
+
+The platform is intentionally implemented in validated stages so that each capability is operational before the next architectural layer is introduced.
 
 ---
