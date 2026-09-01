@@ -8,6 +8,18 @@ $Namespace = "default"
 $SHA = git rev-parse HEAD
 $Image = "${ImageRepository}:${SHA}"
 
+Write-Host ""
+Write-Host "Checking container image availability..."
+Write-Host "Image: $Image"
+
+docker manifest inspect $Image *> $null
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Container image is not available in GHCR: $Image"
+}
+
+Write-Host "Container image is available."
+
 Write-Host "========================================"
 Write-Host "Production Deployment"
 Write-Host "========================================"
@@ -88,6 +100,30 @@ kubectl get pods `
 if ($LASTEXITCODE -ne 0) {
     throw "Pod verification failed."
 }
+
+Write-Host ""
+Write-Host "Verifying running container images..."
+
+$RunningImages = kubectl get pods `
+    -n $Namespace `
+    -l app=$Deployment `
+    -o jsonpath="{range .items[*]}{.spec.containers[0].image}{'\n'}{end}"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Running image verification command failed."
+}
+
+Write-Host $RunningImages
+
+$ExpectedImage = $Image
+
+foreach ($RunningImage in $RunningImages) {
+    if ($RunningImage -ne $ExpectedImage) {
+        throw "Image verification failed. Expected: $ExpectedImage but found: $RunningImage"
+    }
+}
+
+Write-Host "All running pods are using the expected image."
 
 Write-Host ""
 Write-Host "========================================"
