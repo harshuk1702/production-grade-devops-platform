@@ -80,3 +80,7 @@ jobs:
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
           docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
+
+      - name: Verify pushed image
+        run: |
+          docker manifest inspect ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
