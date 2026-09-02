@@ -1,6 +1,6 @@
 # Production-Grade DevOps Platform
 
-A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, observability, reliability engineering, centralized logging, and progressive delivery.
+A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, observability, reliability engineering, centralized logging, distributed tracing, and progressive delivery.
 
 The platform is being built incrementally. Each stage is implemented, tested, validated, documented, and committed to Git.
 
@@ -8,7 +8,7 @@ The platform is being built incrementally. Each stage is implemented, tested, va
 
 ## Current Status
 
-The application delivery platform, containerization, CI/CD, security, Kubernetes deployment, application metrics, Prometheus monitoring, Grafana dashboards, Kubernetes-level observability, Prometheus alerting, Alertmanager routing, Discord notifications, SLO-based reliability monitoring, and centralized logging have been implemented and validated.
+The application delivery platform, containerization, CI/CD, security, Kubernetes deployment, application metrics, Prometheus monitoring, Grafana dashboards, Kubernetes-level observability, Prometheus alerting, Alertmanager routing, Discord notifications, SLO-based reliability monitoring, centralized logging, and distributed tracing have been implemented and validated.
 
 The current Kubernetes deployment is healthy with:
 
@@ -64,6 +64,18 @@ maxSurge: 1
 - Grafana Alloy log collection
 - Grafana Loki datasource
 - Kubernetes pod log collection and visualization
+- OpenTelemetry instrumentation
+- OpenTelemetry OTLP trace export
+- Tempo distributed tracing backend
+- Grafana Tempo datasource
+- Trace visualization in Grafana
+- Trace IDs in structured application logs
+- Span IDs in structured application logs
+- Trace-aware Kubernetes application logging
+- Trace validation through Kubernetes traffic
+- Trace validation through Grafana Tempo
+- Trace ID validation through Loki queries
+- Tempo-to-Loki trace-to-logs configuration
 
 ### Implemented Observability
 
@@ -93,6 +105,12 @@ maxSurge: 1
 - Loki log storage
 - Grafana Alloy log collection
 - Grafana Explore log querying
+- OpenTelemetry instrumentation
+- Distributed tracing
+- Tempo trace storage and querying
+- Grafana trace visualization
+- Trace ID and span ID application logging
+- Trace-to-log correlation from Tempo to Loki
 
 ### Implemented Reliability Engineering
 
@@ -115,6 +133,9 @@ maxSurge: 1
 - Centralized log ingestion
 - Grafana Loki datasource
 - Grafana Explore log querying
+- Structured JSON application logs
+- Trace ID logging
+- Span ID logging
 - End-to-end log validation from Kubernetes pod to Grafana
 
 The validated logging flow is:
@@ -132,11 +153,74 @@ Grafana Loki
 Grafana Explore
 ```
 
+### Implemented Distributed Tracing
+
+- OpenTelemetry SDK and instrumentation
+- FastAPI OpenTelemetry instrumentation
+- OTLP HTTP trace export
+- Tempo trace backend
+- Tempo OTLP ingestion
+- Grafana Tempo datasource
+- Grafana trace exploration
+- Trace ID generation and propagation
+- Span ID generation and propagation
+- Trace IDs included in structured application logs
+- Trace IDs queryable in Loki
+- Trace visualization validated through Grafana
+- Tempo-to-Loki trace-to-logs configuration
+
+The validated tracing flow is:
+
+```text
+FastAPI Application
+        |
+        v
+OpenTelemetry Instrumentation
+        |
+        v
+OTLP HTTP Export
+        |
+        v
+Grafana Tempo
+        |
+        v
+Grafana
+```
+
+The trace and log correlation flow is:
+
+```text
+FastAPI Request
+      |
+      +----------------------+
+      |                      |
+      v                      v
+OpenTelemetry           Structured Log
+      |                      |
+      v                      v
+    Tempo                  Alloy
+      |                      |
+      |                      v
+      |                    Loki
+      |                      |
+      +----------+-----------+
+                 |
+                 v
+              Grafana
+```
+
+The application logs contain the active OpenTelemetry trace context:
+
+```text
+trace_id
+span_id
+```
+
+A validated trace can therefore be used to locate the corresponding application log entry in Loki.
+
 ### Planned
 
-- Distributed tracing
-- Trace-to-log correlation
-- Tempo or another distributed tracing backend
+- Bidirectional Loki-to-Tempo trace navigation using Loki derived fields
 - Canary deployments
 - Traffic management
 - Automated promotion
@@ -150,7 +234,7 @@ Grafana Explore
 
 ### Current Architecture
 
-The current platform implements the application delivery pipeline together with metrics, monitoring, alerting, reliability engineering, and centralized logging.
+The current platform implements the application delivery pipeline together with metrics, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing.
 
 ```text
 Developer
@@ -194,23 +278,31 @@ Pytest Tests          Docker Build       Kubernetes Validation
                FastAPI API
                     |
           +---------+---------+
-          |                   |
-          v                   v
- Application Metrics    Application Traffic
-          |
-          v
-      Prometheus
-          |
-    +-----+----------------------+
-    |                            |
-    v                            v
-PrometheusRule                Grafana
-    |
-    v
-Alertmanager
-    |
-    v
- Discord
+          |         |         |
+          v         v         v
+      Metrics     Logs      Traces
+          |         |         |
+          v         v         v
+     Prometheus   Alloy     OpenTelemetry
+          |         |         |
+          |         v         v
+          |       Loki      Tempo
+          |         |         |
+          +---------+---------+
+                    |
+                    v
+                 Grafana
+                    |
+             +------+------+
+             |             |
+             v             v
+        PrometheusRule   Explore
+             |
+             v
+        Alertmanager
+             |
+             v
+           Discord
 
 
 Kubernetes Pod Logs
@@ -223,6 +315,18 @@ Kubernetes Pod Logs
         |
         v
 Grafana Explore
+
+
+FastAPI Traces
+        |
+        v
+OpenTelemetry
+        |
+        v
+      Tempo
+        |
+        v
+Grafana Trace View
 ```
 
 The current architecture represents components that have been implemented and validated.
@@ -231,51 +335,52 @@ The current architecture represents components that have been implemented and va
 
 ## Observability Architecture
 
-The observability layer collects application-level metrics, Kubernetes-level metrics, and Kubernetes pod logs.
+The observability layer collects application-level metrics, Kubernetes-level metrics, Kubernetes pod logs, and distributed traces.
 
 ```text
                          Kubernetes Cluster
                                 |
                 +---------------+---------------+
-                |                               |
-                v                               v
-        FastAPI Application            Kubernetes Resources
-                |                               |
-                |                       +-------+-------+
-                |                       |               |
-                v                       v               v
-          /metrics/              kube-state-metrics  node-exporter
-                |                       |               |
-                +-----------+-----------+---------------+
-                            |
-                            v
-                        Prometheus
-                            |
-                 +----------+----------+
-                 |                     |
-                 v                     v
-              Grafana             PrometheusRule
-           Dashboards                   |
-                                        v
-                                  Alertmanager
-                                        |
-                                        v
-                                     Discord
-
-
-                 Kubernetes Pod Logs
-                         |
-                         v
-                   Grafana Alloy
-                         |
-                         v
-                    Grafana Loki
-                         |
-                         v
-                   Grafana Explore
+                |               |               |
+                v               v               v
+        FastAPI Application  Kubernetes     Application
+                |            Resources        Traces
+                |               |               |
+        +-------+-------+   +---+---+           v
+        |               |   |       |     OpenTelemetry
+        v               v   v       v           |
+   /metrics/        Application   kube-state-   v
+                    Logs          metrics     Tempo
+        |               |           |           |
+        |               v           v           |
+        |          Grafana Alloy  node-exporter |
+        |               |           |           |
+        |               v           |           |
+        |              Loki         |           |
+        |               |           |           |
+        +---------------+-----------+-----------+
+                                |
+                                v
+                            Prometheus
+                                |
+                    +-----------+-----------+
+                    |                       |
+                    v                       v
+                 Grafana              PrometheusRule
+                    |                       |
+                    |                       v
+                    |                  Alertmanager
+                    |                       |
+                    |                       v
+                    |                    Discord
+                    |
+             +------+------+
+             |             |
+             v             v
+       Grafana Explore  Tempo Trace View
 ```
 
-The platform therefore separates metrics and logs while providing a common visualization layer through Grafana.
+The platform therefore separates metrics, logs, and traces while providing a common visualization and investigation layer through Grafana.
 
 ### Application Observability
 
@@ -304,6 +409,132 @@ These metrics provide the foundation for:
 - SLO calculations
 - Error-budget calculations
 - SLO-based alerting
+
+The application also emits structured JSON logs containing:
+
+```text
+timestamp
+level
+service
+message
+trace_id
+span_id
+method
+path
+status
+duration_seconds
+```
+
+OpenTelemetry instrumentation creates traces for incoming FastAPI requests.
+
+The tracing data is exported using OTLP HTTP to Tempo.
+
+### Distributed Tracing
+
+Distributed tracing is implemented using OpenTelemetry instrumentation and Grafana Tempo.
+
+The tracing pipeline is:
+
+```text
+FastAPI Application
+        |
+        v
+OpenTelemetry Instrumentation
+        |
+        v
+OTLP HTTP Exporter
+        |
+        v
+Tempo
+        |
+        v
+Grafana
+```
+
+The Kubernetes application is configured to export traces to:
+
+```text
+http://tempo.tempo.svc.cluster.local:4318/v1/traces
+```
+
+The application uses:
+
+```text
+OTEL_SERVICE_NAME=devops-demo-api
+```
+
+The tracing implementation is based on:
+
+```text
+opentelemetry-distro
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi
+```
+
+The application logs the active trace context so that a request can be correlated with its trace:
+
+```text
+trace_id
+span_id
+```
+
+A validated application request produced a trace such as:
+
+```text
+trace_id: e94c23b30fc541e950b8bbfb7f19fa96
+span_id: ab535222f32c5aaa
+```
+
+The trace was subsequently located in Grafana Tempo and the same trace ID was verified in Loki.
+
+### Trace-to-Log Correlation
+
+Grafana is configured with Tempo as a tracing datasource and Loki as the logging datasource.
+
+Tempo is configured to use Loki for trace-to-log navigation through:
+
+```yaml
+jsonData:
+  tracesToLogsV2:
+    datasourceUid: loki
+    spanStartTimeShift: "-2s"
+    spanEndTimeShift: "2s"
+    filterByTraceID: true
+    filterBySpanID: false
+```
+
+The correlation flow is:
+
+```text
+Tempo Trace
+     |
+     v
+Trace ID
+     |
+     v
+Loki
+     |
+     v
+Structured Application Log
+```
+
+The application log contains the same trace ID generated by OpenTelemetry.
+
+A direct Loki query can therefore locate the log associated with a trace:
+
+```text
+{namespace="default"} |= "<trace-id>"
+```
+
+For example:
+
+```text
+trace_id="a00ae9f335695a5950430f79687a5a43"
+```
+
+was successfully matched to the corresponding `/api/test-slow` application log in Loki.
+
+The current implementation validates Tempo-to-Loki correlation. Full bidirectional navigation from arbitrary Loki log entries back into Tempo using Loki derived fields remains a planned enhancement.
 
 ### Kubernetes Observability
 
@@ -593,7 +824,7 @@ Automated Tests       Docker Build       Kubernetes Validation
 
 Components are marked as implemented only after they have been deployed and validated.
 
-The target architecture is intentionally ahead of the current implementation. Distributed tracing and progressive delivery remain future milestones.
+Distributed tracing is now implemented and validated. Progressive delivery remains a future milestone.
 
 ---
 
@@ -608,6 +839,7 @@ The target architecture is intentionally ahead of the current implementation. Di
 - Pytest
 - HTTPX
 - prometheus-client
+- OpenTelemetry
 
 ### Containerization
 
@@ -667,14 +899,19 @@ The target architecture is intentionally ahead of the current implementation. Di
 - Grafana Alloy
 - Centralized Kubernetes pod logging
 - Grafana Explore
+- OpenTelemetry
+- OTLP
+- Grafana Tempo
+- Distributed tracing
+- Trace IDs
+- Span IDs
+- Trace visualization
+- Trace-to-log correlation
 
 ### Planned Observability
 
-- Distributed tracing
-- Tempo or equivalent trace backend
-- Trace collection
-- Trace visualization
-- Trace-to-log correlation
+- Bidirectional Loki-to-Tempo trace navigation
+- Loki derived fields for trace navigation
 
 ### Planned Progressive Delivery
 
@@ -697,12 +934,15 @@ The FastAPI application exposes the following endpoints:
 | `GET /api/products` | Product data |
 | `GET /api/orders` | Order data |
 | `GET /api/test-error` | Intentional 500 error for alert validation |
+| `GET /api/test-slow` | Intentional slow response for latency and tracing validation |
 | `GET /metrics/` | Prometheus application metrics |
 | `GET /docs` | Swagger UI |
 
 FastAPI automatically provides OpenAPI documentation through the Swagger interface.
 
 The `/api/test-error` endpoint intentionally raises an exception and returns HTTP 500. It is used to validate application error metrics and the Prometheus alerting pipeline.
+
+The `/api/test-slow` endpoint intentionally introduces a slow response and is used to validate latency monitoring and distributed tracing.
 
 ---
 
@@ -777,6 +1017,230 @@ http_requests_total{method="GET",path="/",status="200"}
 http_requests_total{method="GET",path="/health",status="200"}
 http_requests_total{method="GET",path="/api/test-error",status="500"}
 ```
+
+---
+
+## Distributed Tracing
+
+Distributed tracing is implemented using OpenTelemetry and Grafana Tempo.
+
+### OpenTelemetry Instrumentation
+
+The application uses:
+
+```text
+opentelemetry-distro
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi
+```
+
+FastAPI requests are instrumented using OpenTelemetry.
+
+The application is configured with:
+
+```text
+OTEL_SERVICE_NAME=devops-demo-api
+```
+
+The Kubernetes deployment exports traces using OTLP HTTP to:
+
+```text
+http://tempo.tempo.svc.cluster.local:4318/v1/traces
+```
+
+### Tracing Architecture
+
+```text
+HTTP Request
+     |
+     v
+FastAPI
+     |
+     v
+OpenTelemetry Instrumentation
+     |
+     +-------------------+
+     |                   |
+     v                   v
+Trace Context       Structured Log
+     |                   |
+     v                   v
+OTLP HTTP             Alloy
+     |                   |
+     v                   v
+   Tempo                Loki
+     |                   |
+     +---------+---------+
+               |
+               v
+            Grafana
+```
+
+### Trace Context in Application Logs
+
+The application structured logging formatter extracts the active OpenTelemetry span context.
+
+Each completed HTTP request can therefore contain:
+
+```text
+trace_id
+span_id
+```
+
+alongside:
+
+```text
+method
+path
+status
+duration_seconds
+```
+
+Example:
+
+```json
+{
+  "timestamp": "2026-09-02T20:31:36",
+  "level": "INFO",
+  "service": "devops-demo-api",
+  "message": "HTTP request completed",
+  "trace_id": "e94c23b30fc541e950b8bbfb7f19fa96",
+  "span_id": "ab535222f32c5aaa",
+  "method": "GET",
+  "path": "/api/test-slow",
+  "status": "200",
+  "duration_seconds": 2.0015
+}
+```
+
+### Tempo
+
+Tempo runs in the `tempo` namespace.
+
+The Tempo service exposes:
+
+```text
+3200  HTTP API
+4317  OTLP gRPC
+4318  OTLP HTTP
+```
+
+The Kubernetes service endpoint is:
+
+```text
+tempo.tempo.svc.cluster.local
+```
+
+The application sends OTLP HTTP traces to:
+
+```text
+http://tempo.tempo.svc.cluster.local:4318/v1/traces
+```
+
+### Grafana Tempo Datasource
+
+Grafana is configured declaratively with the Tempo datasource through:
+
+```text
+k8s/monitoring-values.yaml
+```
+
+The configured datasource is:
+
+```yaml
+- name: Tempo
+  type: tempo
+  uid: tempo
+  url: http://tempo.tempo.svc.cluster.local:3200
+  access: proxy
+  isDefault: false
+  jsonData:
+    tracesToLogsV2:
+      datasourceUid: loki
+      spanStartTimeShift: "-2s"
+      spanEndTimeShift: "2s"
+      filterByTraceID: true
+      filterBySpanID: false
+```
+
+This allows Grafana to use Loki when investigating logs associated with Tempo traces.
+
+### Trace Validation
+
+A controlled request was generated against:
+
+```text
+/api/test-slow
+```
+
+The endpoint returned:
+
+```text
+{"message":"Intentional slow response for alert testing"}
+```
+
+The corresponding Kubernetes application log contained:
+
+```text
+trace_id: e94c23b30fc541e950b8bbfb7f19fa96
+span_id: ab535222f32c5aaa
+path: /api/test-slow
+status: 200
+duration_seconds: 2.0015
+```
+
+The trace was subsequently imported and visualized through Grafana Tempo.
+
+### Loki Trace ID Validation
+
+The same trace context is present in Loki.
+
+A Loki query can locate the log using the trace ID:
+
+```text
+{namespace="default"} |= "<trace-id>"
+```
+
+A validated example returned the corresponding structured application log:
+
+```text
+trace_id: a00ae9f335695a5950430f79687a5a43
+span_id: c62464ff12c612c6
+path: /api/test-slow
+status: 200
+duration_seconds: 2.0009
+```
+
+This proves that the trace identifier generated by OpenTelemetry is available in both the tracing backend and centralized application logs.
+
+### Trace-to-Log Correlation
+
+The current correlation direction is:
+
+```text
+Tempo Trace
+     |
+     v
+Trace ID
+     |
+     v
+Loki Query
+     |
+     v
+Structured Application Log
+```
+
+Grafana Tempo is configured to use Loki for trace-to-log navigation.
+
+The current configuration uses:
+
+```text
+spanStartTimeShift: -2s
+spanEndTimeShift: +2s
+filterByTraceID: true
+```
+
+Full Loki derived-field configuration for direct log-to-trace navigation has not yet been added to the current platform configuration and therefore remains a planned enhancement.
 
 ---
 
@@ -1222,12 +1686,12 @@ Kubernetes Service
        |                  |
        v                  v
     Grafana          PrometheusRule
-                         |
-                         v
-                    Alertmanager
-                         |
-                         v
-                       Discord
+                          |
+                          v
+                     Alertmanager
+                          |
+                          v
+                        Discord
 ```
 
 Prometheus provides the metrics backend for both Grafana dashboards and alert evaluation.
@@ -1242,7 +1706,9 @@ Prometheus is configured as the metrics data source.
 
 Loki is configured as the centralized logging data source.
 
-The dashboards provide visibility into areas such as:
+Tempo is configured as the distributed tracing data source.
+
+The dashboards and Explore views provide visibility into areas such as:
 
 - Application request traffic
 - HTTP response status
@@ -1252,6 +1718,9 @@ The dashboards provide visibility into areas such as:
 - Pod-level information
 - Node-level metrics
 - Application health
+- Distributed traces
+- Trace IDs
+- Application logs
 
 The Grafana architecture is:
 
@@ -1283,6 +1752,21 @@ Kubernetes Pod Logs
         |
         v
    Grafana Explore
+
+
+Application Traces
+        |
+        v
+  OpenTelemetry
+        |
+        v
+      Tempo
+        |
+        v
+      Grafana
+        |
+        v
+   Trace Explorer
 ```
 
 Grafana is used for visualization and operational investigation, while Prometheus and Alertmanager handle metric evaluation and alert delivery.
@@ -1294,6 +1778,10 @@ Example LogQL query:
 ```text
 {pod="devops-demo-api-<pod-id>"}
 ```
+
+Tempo Explore provides interactive trace investigation.
+
+Trace IDs can also be used to correlate trace data with structured application logs stored in Loki.
 
 ---
 
@@ -1418,6 +1906,12 @@ Example:
 {namespace="default"}
 ```
 
+Trace IDs can be searched directly in Loki:
+
+```text
+{namespace="default"} |= "<trace-id>"
+```
+
 The centralized logging pipeline was validated end-to-end:
 
 ```text
@@ -1435,6 +1929,143 @@ Grafana Explore
       v
 Visible Pod Logs
 ```
+
+---
+
+## Tempo Distributed Tracing
+
+Grafana Tempo provides the distributed tracing backend for the application.
+
+Tempo runs in the `tempo` namespace.
+
+### Tempo Configuration
+
+The Tempo Helm values are stored in:
+
+```text
+k8s/tempo-values.yaml
+```
+
+The current configuration is:
+
+```yaml
+tempo:
+  reportingEnabled: false
+
+persistence:
+  enabled: false
+
+traces:
+  otlp:
+    grpc:
+      enabled: true
+    http:
+      enabled: true
+```
+
+### Tempo Service
+
+The Tempo Kubernetes service exposes:
+
+```text
+3200  HTTP API
+4317  OTLP gRPC
+4318  OTLP HTTP
+```
+
+The internal service endpoint is:
+
+```text
+tempo.tempo.svc.cluster.local
+```
+
+### Trace Ingestion
+
+The application exports OTLP HTTP traces to:
+
+```text
+http://tempo.tempo.svc.cluster.local:4318/v1/traces
+```
+
+The validated flow is:
+
+```text
+devops-demo-api
+      |
+      v
+OpenTelemetry
+      |
+      v
+OTLP HTTP
+      |
+      v
+Tempo
+```
+
+### Grafana Tempo Datasource
+
+Grafana uses the Tempo datasource:
+
+```yaml
+- name: Tempo
+  type: tempo
+  uid: tempo
+  url: http://tempo.tempo.svc.cluster.local:3200
+  access: proxy
+  isDefault: false
+  jsonData:
+    tracesToLogsV2:
+      datasourceUid: loki
+      spanStartTimeShift: "-2s"
+      spanEndTimeShift: "2s"
+      filterByTraceID: true
+      filterBySpanID: false
+```
+
+### Trace Visualization
+
+A validated application trace was imported into Grafana Tempo and successfully visualized.
+
+The trace included the application service:
+
+```text
+devops-demo-api
+```
+
+The `/api/test-slow` endpoint was used as a controlled trace-generation endpoint.
+
+The request duration was approximately:
+
+```text
+2 seconds
+```
+
+The trace ID was also present in the corresponding Loki log entry.
+
+### Trace and Log Correlation
+
+The application generates trace IDs through OpenTelemetry.
+
+The same trace IDs are written to structured application logs.
+
+Therefore:
+
+```text
+HTTP Request
+     |
+     +-----------------------+
+     |                       |
+     v                       v
+   Tempo                   Loki
+     |                       |
+     |                       |
+     +----------+------------+
+                |
+                v
+             Grafana
+```
+
+This establishes a common trace identifier across the tracing and logging systems.
 
 ---
 
@@ -1480,6 +2111,7 @@ The Kubernetes observability pipeline is:
 
 ```text
 Kubernetes Cluster
+
        |
        +-------------------------+
        |                         |
@@ -1566,6 +2198,8 @@ The calculation uses:
 ```text
 http_request_duration_seconds_bucket
 ```
+
+The `/api/test-slow` endpoint is also available for controlled latency and tracing validation.
 
 ### Application Availability
 
@@ -1773,7 +2407,6 @@ alertmanager:
     alertmanagerConfigSelector:
       matchLabels:
         alertmanagerConfig: devops-demo
-
     alertmanagerConfigNamespaceSelector:
       matchNames:
         - monitoring
@@ -1830,7 +2463,6 @@ $result = Invoke-RestMethod `
     "http://localhost:9090/api/v1/query" `
     -Method Get `
     -Body $params
-
 $result.data.result
 ```
 
@@ -2046,6 +2678,119 @@ Grafana Explore
 Test Log Successfully Visible
 ```
 
+### Verify Trace IDs in Loki
+
+A trace ID can be searched directly in Loki:
+
+```text
+{namespace="default"} |= "<trace-id>"
+```
+
+This allows a trace discovered in Tempo to be correlated with its structured application log.
+
+---
+
+## Tracing Validation
+
+Distributed tracing can be validated independently from metric alerting and centralized logging.
+
+### Generate a Trace
+
+The `/api/test-slow` endpoint can be used to generate a controlled trace:
+
+```powershell
+kubectl run curl-test --rm -i --restart=Never `
+  --image=curlimages/curl `
+  -- curl -s http://devops-demo-api.default.svc.cluster.local:8000/api/test-slow
+```
+
+Expected response:
+
+```text
+{"message":"Intentional slow response for alert testing"}
+```
+
+### Verify the Trace-Aware Application Log
+
+```powershell
+kubectl logs deployment/devops-demo-api --since=10m | Select-String "test-slow"
+```
+
+The application log should contain:
+
+```text
+trace_id
+span_id
+path
+status
+duration_seconds
+```
+
+Example:
+
+```json
+{
+  "trace_id": "e94c23b30fc541e950b8bbfb7f19fa96",
+  "span_id": "ab535222f32c5aaa",
+  "path": "/api/test-slow",
+  "status": "200",
+  "duration_seconds": 2.0015
+}
+```
+
+### Verify Loki Trace Correlation
+
+A trace ID can be queried directly through Loki:
+
+```powershell
+kubectl run loki-query --rm -i --restart=Never `
+  --image=curlimages/curl `
+  -- curl -s "http://loki.loki.svc.cluster.local:3100/loki/api/v1/query_range?query=%7Bnamespace%3D%22default%22%7D%7C%3D%22<trace-id>%22&limit=20"
+```
+
+The query should return the corresponding structured application log.
+
+### Verify Trace in Grafana
+
+Open Grafana and navigate to:
+
+```text
+Explore
+```
+
+Select:
+
+```text
+Tempo
+```
+
+A validated trace can be opened using its trace ID.
+
+The trace should display the instrumented FastAPI request and associated span information.
+
+The validated tracing pipeline is:
+
+```text
+Kubernetes Request
+       |
+       v
+FastAPI
+       |
+       v
+OpenTelemetry
+       |
+       +----------------------+
+       |                      |
+       v                      v
+     Tempo                Structured Log
+       |                      |
+       v                      v
+    Grafana                 Alloy
+                              |
+                              v
+                             Loki
+```
+
 ---
 
 ## Rolling Updates
@@ -2098,7 +2843,9 @@ The current deployment strategy is:
 
 ```text
 RollingUpdate
+
 maxUnavailable: 0
+
 maxSurge: 1
 ```
 
@@ -2134,7 +2881,8 @@ production-grade-devops-platform/
 │   ├── deployment.yaml
 │   ├── monitoring-values.yaml
 │   ├── prometheusrule.yaml
-│   └── service.yaml
+│   ├── service.yaml
+│   └── tempo-values.yaml
 │
 ├── scripts/
 │   └── deploy.ps1
@@ -2212,7 +2960,14 @@ production-grade-devops-platform/
 - [x] Grafana Loki
 - [x] Grafana Alloy
 - [x] Grafana log visualization
-- [ ] Distributed tracing
+- [x] OpenTelemetry
+- [x] Distributed tracing
+- [x] Grafana Tempo
+- [x] Trace IDs in structured application logs
+- [x] Span IDs in structured application logs
+- [x] Grafana trace visualization
+- [x] Tempo-to-Loki trace-to-log correlation
+- [ ] Loki derived fields for direct log-to-trace navigation
 
 ### Phase 6 — Progressive Delivery
 
@@ -2250,6 +3005,7 @@ For each major change:
 8. Push the change to GitHub
 9. Verify GitHub Actions
 10. Validate monitoring and alerting where applicable
+11. Validate logging and tracing where applicable
 
 This approach keeps each stage reproducible and provides a clear Git history of the platform's evolution.
 
@@ -2257,62 +3013,140 @@ This approach keeps each stage reproducible and provides a clear Git history of 
 
 ## Current Milestone
 
-The application delivery platform, Kubernetes deployment, monitoring, alerting, reliability engineering, and centralized logging foundation are complete.
+The application delivery platform, Kubernetes deployment, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing foundation are complete.
 
 The platform currently demonstrates:
 
 ```text
 Application
+
     +
+
 Testing
+
     +
+
 Containerization
+
     +
+
 Container Security
+
     +
+
 CI/CD
+
     +
+
 Vulnerability Scanning
+
     +
+
 Container Registry
+
     +
+
 Kubernetes
+
     +
+
 Rolling Updates
+
     +
+
 Health Checks
+
     +
+
 Application Metrics
+
     +
+
 Kubernetes Metrics
+
     +
+
 Prometheus
+
     +
+
 Grafana
+
     +
+
 PrometheusRule
+
     +
+
 Alertmanager
+
     +
+
 Discord Notifications
+
     +
+
 Alert Recovery
+
     +
+
 Service-Level Objectives
+
     +
+
 Availability / Error-Rate SLIs
+
     +
+
 Error Budgets
+
     +
+
 Burn-Rate Monitoring
+
     +
+
 SLO-Based Alerting
+
     +
+
 Grafana Loki
+
     +
+
 Grafana Alloy
+
     +
+
 Centralized Kubernetes Logging
+
+    +
+
+OpenTelemetry
+
+    +
+
+Distributed Tracing
+
+    +
+
+Grafana Tempo
+
+    +
+
+Trace IDs
+
+    +
+
+Span IDs
+
+    +
+
+Trace Visualization
+
+    +
+
+Trace-to-Log Correlation
 ```
 
 The current Kubernetes deployment has also been validated after controlled scaling:
@@ -2321,20 +3155,27 @@ The current Kubernetes deployment has also been validated after controlled scali
 Deployment: devops-demo-api
 
 Initial state:
+
 2/2 replicas available
 
 Controlled test:
+
 scaled to 0 replicas
 
 Observed:
+
 0/0 replicas
+
 No application pods
 
 Recovery:
+
 scaled back to 2 replicas
 
 Final state:
+
 2/2 replicas available
+
 2/2 pods running
 ```
 
@@ -2342,6 +3183,7 @@ Prometheus successfully exposes the Kubernetes deployment state through:
 
 ```text
 kube_deployment_status_replicas_available
+
 kube_deployment_spec_replicas
 ```
 
@@ -2349,6 +3191,7 @@ The final healthy state is:
 
 ```text
 Available replicas: 2
+
 Desired replicas: 2
 ```
 
@@ -2357,51 +3200,114 @@ The platform has progressed beyond basic application monitoring into a broader o
 ```text
 Application
     |
-    +----------------------+----------------------+
+    +----------------------+----------------------+----------------------+
     |                      |                      |
     v                      v                      v
 Application Metrics   Kubernetes Metrics    Kubernetes Logs
     |                      |                      |
-    +----------+-----------+                      |
-               |                                  |
-               v                                  v
-           Prometheus                        Grafana Alloy
-               |                                  |
-         +-----+-----+                            v
-         |           |                         Loki
-         v           v                            |
-      Grafana     Alerting                        |
-                     |                            |
-                     v                            |
-                Alertmanager                      |
-                     |                            |
-                     v                            |
-                  Discord                         |
-                                                  v
-                                             Grafana Explore
+    |                      |                      v
+    |                      |                 Grafana Alloy
+    |                      |                      |
+    |                      |                      v
+    |                      |                     Loki
+    |                      |                      |
+    |                      |                      |
+    |                      |                      v
+    |                      |               Grafana Explore
+    |                      |
+    +----------+-----------+
+               |
+               v
+           Prometheus
+               |
+         +-----+-----+
+         |           |
+         v           v
+      Grafana     Alerting
+         |           |
+         |           v
+         |      Alertmanager
+         |           |
+         |           v
+         |        Discord
+         |
+         +----------------------+
+                                |
+                                v
+                       Application Traces
+                                |
+                                v
+                         OpenTelemetry
+                                |
+                                v
+                              Tempo
+                                |
+                                v
+                         Grafana Traces
 ```
 
 The project has now established a complete baseline for:
 
 ```text
 Metrics
+
     +
+
 Dashboards
+
     +
+
 Alerting
+
     +
+
 Notifications
+
     +
+
 SLOs
+
     +
+
 Error Budgets
+
     +
+
 Reliability Monitoring
+
     +
+
 Centralized Logging
+
+    +
+
+Distributed Tracing
+
+    +
+
+Trace-to-Log Correlation
 ```
 
-The next major milestone is **distributed tracing and deeper observability correlation**.
+The platform has therefore progressed from basic monitoring into a three-pillar observability model:
+
+```text
+              Observability
+                    |
+        +-----------+-----------+
+        |           |           |
+        v           v           v
+     Metrics      Logs       Traces
+        |           |           |
+        v           v           v
+   Prometheus     Loki       Tempo
+        |           |           |
+        +-----------+-----------+
+                    |
+                    v
+                 Grafana
+```
+
+The next major milestone is **progressive delivery and canary deployment**.
 
 ---
 
@@ -2410,118 +3316,219 @@ The next major milestone is **distributed tracing and deeper observability corre
 The next implementation task starts with:
 
 ```text
-PHASE 5 — OBSERVABILITY
+PHASE 6 — PROGRESSIVE DELIVERY
 
         |
+
         v
 
-DISTRIBUTED TRACING
+STABLE DEPLOYMENT
 
         |
+
         v
 
-TRACE COLLECTION
+CANARY DEPLOYMENT
 
         |
+
         v
 
-TRACE VISUALIZATION
+TRAFFIC MANAGEMENT
 
         |
+
         v
 
-METRICS / LOGS / TRACES CORRELATION
+CANARY VALIDATION
+
+        |
+
+        v
+
+AUTOMATED PROMOTION
+
+        |
+
+        v
+
+AUTOMATED ROLLBACK
 ```
 
-The immediate next task is:
+The distributed tracing milestone has been completed.
 
-**Implement distributed tracing for `devops-demo-api`.**
-
-The tracing implementation should build on the existing Prometheus, Grafana, Loki, and Grafana Alloy observability foundation rather than replacing the current monitoring and logging systems.
-
-The planned tracing flow is:
+The current observability foundation includes:
 
 ```text
-Existing FastAPI Application
-        |
-        v
-OpenTelemetry Instrumentation
-        |
-        v
-Trace Data
-        |
-        v
-Trace Backend
-        |
-        v
+Metrics
+    |
+    v
+Prometheus
+    |
+    v
 Grafana
-        |
-        +-------------------+
-        |                   |
-        v                   v
-     Metrics              Logs
-        |                   |
-        v                   v
-   Prometheus              Loki
-        \                   /
-         \                 /
-          +-------+-------+
-                  |
-                  v
-             Correlated
-            Observability
+
+Logs
+    |
+    v
+Grafana Alloy
+    |
+    v
+Loki
+    |
+    v
+Grafana
+
+Traces
+    |
+    v
+OpenTelemetry
+    |
+    v
+Tempo
+    |
+    v
+Grafana
 ```
 
-The tracing milestone should provide visibility into request execution across application components and establish the foundation for metrics, logs, and traces correlation.
+The tracing implementation provides:
 
-After distributed tracing is completed, the project will progress toward:
+- OpenTelemetry instrumentation for the FastAPI application
+- OTLP trace export
+- Tempo trace storage
+- Grafana trace visualization
+- Trace IDs in structured application logs
+- Span IDs in structured application logs
+- Trace ID queries in Loki
+- Tempo-to-Loki trace-to-log correlation
+
+The remaining observability enhancement is bidirectional navigation from Loki logs directly back to Tempo using Loki derived fields.
+
+The next major implementation task is:
+
+**Implement progressive delivery with a stable deployment and canary deployment strategy.**
+
+The progressive delivery implementation should build on the existing Kubernetes, monitoring, alerting, SLO, logging, and tracing foundation rather than replacing the current platform.
+
+The planned progressive delivery flow is:
 
 ```text
-Advanced Observability
+Existing Kubernetes Deployment
         |
         v
-Canary Deployment
+Stable Version
         |
-        v
-Traffic Management
-        |
-        v
-Canary Validation
-        |
-        v
-Automated Promotion
-        |
-        v
-Automated Rollback
+        +----------------+
+        |                |
+        v                v
+     Stable           Canary
+        |                |
+        +-------+--------+
+                |
+                v
+       Traffic Management
+                |
+                v
+        Canary Validation
+                |
+        +-------+-------+
+        |               |
+        v               v
+      Healthy        Unhealthy
+        |               |
+        v               v
+Automated Promotion  Automated Rollback
+```
+
+Canary validation should use the existing observability foundation:
+
+```text
+Canary
+  |
+  +------------------+------------------+
+  |                  |                  |
+  v                  v                  v
+Metrics             Logs              Traces
+  |                  |                  |
+  v                  v                  v
+Prometheus           Loki              Tempo
+  |                  |                  |
+  +------------------+------------------+
+                     |
+                     v
+                  Grafana
+                     |
+                     v
+              Canary Decision
 ```
 
 This keeps the project progression logical:
 
 ```text
 Application
+
     ↓
+
 Containerization
+
     ↓
+
 CI/CD
+
     ↓
+
 Kubernetes
+
     ↓
+
 Metrics
+
     ↓
+
 Monitoring
+
     ↓
+
 Alerting
+
     ↓
+
 SLOs / Reliability Engineering
+
     ↓
+
 Centralized Logging
+
     ↓
+
 Distributed Tracing
+
     ↓
+
+Trace-to-Log Correlation
+
+    ↓
+
 Advanced Observability
+
     ↓
+
 Progressive Delivery
+
     ↓
+
+Canary Deployment
+
+    ↓
+
+Traffic Management
+
+    ↓
+
+Automated Promotion
+
+    ↓
+
 Automated Rollback
 ```
 

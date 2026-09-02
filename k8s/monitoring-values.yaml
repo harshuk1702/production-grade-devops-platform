@@ -19,3 +19,10 @@ grafana:
       url: http://tempo.tempo.svc.cluster.local:3200
       access: proxy
       isDefault: false
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: loki
+          spanStartTimeShift: "-2s"
+          spanEndTimeShift: "2s"
+          filterByTraceID: true
+          filterBySpanID: false
