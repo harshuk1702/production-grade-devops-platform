@@ -35,6 +35,13 @@ spec:
           ports:
             - containerPort: 8000
 
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "devops-demo-api"
+
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://tempo.tempo.svc.cluster.local:4318/v1/traces"
+
           resources:
             requests:
               cpu: "100m"

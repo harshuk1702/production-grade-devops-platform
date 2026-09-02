@@ -1,4 +1,12 @@
+import os
+
 from fastapi import FastAPI
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, Histogram, make_asgi_app
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -14,6 +22,28 @@ app = FastAPI(
     version="1.0.0",
 )
 
+resource = Resource.create(
+    {
+        "service.name": os.getenv("OTEL_SERVICE_NAME", "devops-demo-api"),
+    }
+)
+
+tracer_provider = TracerProvider(resource=resource)
+
+otlp_exporter = OTLPSpanExporter(
+    endpoint=os.getenv(
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "http://localhost:4318/v1/traces",
+    )
+)
+
+tracer_provider.add_span_processor(
+    BatchSpanProcessor(otlp_exporter)
+)
+
+trace.set_tracer_provider(tracer_provider)
+
+FastAPIInstrumentor.instrument_app(app)
 
 REQUEST_COUNT = Counter(
     "http_requests_total",
