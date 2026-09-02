@@ -1,0 +1,12 @@
+tempo:
+  reportingEnabled: false
+
+persistence:
+  enabled: false
+
+traces:
+  otlp:
+    grpc:
+      enabled: true
+    http:
+      enabled: true

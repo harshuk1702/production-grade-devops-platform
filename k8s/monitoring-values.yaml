@@ -1,12 +1,8 @@
-﻿alertmanager:
+alertmanager:
   alertmanagerSpec:
     alertmanagerConfigSelector:
       matchLabels:
         alertmanagerConfig: devops-demo
-
-    alertmanagerConfigNamespaceSelector:
-      matchNames:
-        - monitoring
 
 grafana:
   additionalDataSources:
@@ -14,5 +10,12 @@ grafana:
       type: loki
       uid: loki
       url: http://loki.loki.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo.tempo.svc.cluster.local:3200
       access: proxy
       isDefault: false
