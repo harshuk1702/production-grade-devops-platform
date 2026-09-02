@@ -1,4 +1,7 @@
+import json
+import logging
 import os
+import sys
 
 from fastapi import FastAPI
 from opentelemetry import trace
@@ -22,9 +25,13 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
 resource = Resource.create(
     {
-        "service.name": os.getenv("OTEL_SERVICE_NAME", "devops-demo-api"),
+        "service.name": os.getenv(
+            "OTEL_SERVICE_NAME",
+            "devops-demo-api",
+        ),
     }
 )
 
@@ -44,6 +51,62 @@ tracer_provider.add_span_processor(
 trace.set_tracer_provider(tracer_provider)
 
 FastAPIInstrumentor.instrument_app(app)
+
+
+class TraceContextFormatter(logging.Formatter):
+    def format(self, record):
+        span = trace.get_current_span()
+        span_context = span.get_span_context()
+
+        trace_id = (
+            format(span_context.trace_id, "032x")
+            if span_context.is_valid
+            else None
+        )
+
+        span_id = (
+            format(span_context.span_id, "016x")
+            if span_context.is_valid
+            else None
+        )
+
+        log_record = {
+            "timestamp": self.formatTime(
+                record,
+                "%Y-%m-%dT%H:%M:%S",
+            ),
+            "level": record.levelname,
+            "service": os.getenv(
+                "OTEL_SERVICE_NAME",
+                "devops-demo-api",
+            ),
+            "message": record.getMessage(),
+            "trace_id": trace_id,
+            "span_id": span_id,
+        }
+
+        for field in (
+            "method",
+            "path",
+            "status",
+            "duration_seconds",
+        ):
+            if hasattr(record, field):
+                log_record[field] = getattr(record, field)
+
+        return json.dumps(log_record)
+
+
+logger = logging.getLogger("devops-demo-api")
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(TraceContextFormatter())
+
+logger.handlers.clear()
+logger.addHandler(handler)
+logger.propagate = False
+
 
 REQUEST_COUNT = Counter(
     "http_requests_total",
@@ -79,6 +142,16 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
         finally:
             duration = time.perf_counter() - start_time
+
+            logger.info(
+                "HTTP request completed",
+                extra={
+                    "method": method,
+                    "path": path,
+                    "status": status,
+                    "duration_seconds": round(duration, 4),
+                },
+            )
 
             REQUEST_COUNT.labels(
                 method=method,
