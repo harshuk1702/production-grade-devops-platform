@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: devops-demo-api
 spec:
@@ -7,20 +7,37 @@ spec:
 
   revisionHistoryLimit: 3
 
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
-
   selector:
     matchLabels:
       app: devops-demo-api
+
+  strategy:
+    canary:
+      stableService: devops-demo-api-stable
+      canaryService: devops-demo-api-canary
+
+      trafficRouting:
+        nginx:
+          stableIngress: devops-demo-api-ingress
+
+      maxSurge: 1
+      maxUnavailable: 0
+
+      steps:
+        - setWeight: 10
+        - pause:
+            duration: 30s
+        - setWeight: 50
+        - pause:
+            duration: 30s
+        - setWeight: 100
 
   template:
     metadata:
       labels:
         app: devops-demo-api
+      annotations:
+        rollout-demo: "revision-2"
 
     spec:
       terminationGracePeriodSeconds: 30
@@ -30,7 +47,7 @@ spec:
 
       containers:
         - name: devops-demo-api
-          image: ghcr.io/harshuk1702/devops-demo-api:afe646fd75841ec36d530cd74dc8496765183b87
+          image: ghcr.io/harshuk1702/devops-demo-api:930effe4a85b9f33c64d09da55d7c41b2ac78ac7
 
           ports:
             - containerPort: 8000
