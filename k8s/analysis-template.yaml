@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: devops-demo-api-success-rate
+  namespace: default
+spec:
+  metrics:
+    - name: success-rate
+      interval: 30s
+      count: 2
+      successCondition: result[0] >= 0.95
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{job="devops-demo-api",path="/",status=~"2.."}[1m]))
+            /
+            sum(rate(http_requests_total{job="devops-demo-api",path="/"}[1m]))
