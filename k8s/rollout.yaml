@@ -25,9 +25,15 @@ spec:
 
       steps:
         - setWeight: 10
+        - analysis:
+            templates:
+              - templateName: devops-demo-api-success-rate
         - pause:
             duration: 30s
         - setWeight: 50
+        - analysis:
+            templates:
+              - templateName: devops-demo-api-success-rate
         - pause:
             duration: 30s
         - setWeight: 100
@@ -37,7 +43,7 @@ spec:
       labels:
         app: devops-demo-api
       annotations:
-        rollout-demo: "revision-2"
+        rollout-demo: "analysis-test-1"
 
     spec:
       terminationGracePeriodSeconds: 30
