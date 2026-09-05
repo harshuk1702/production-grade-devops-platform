@@ -59,10 +59,13 @@ jobs:
             default
             -schema-location
             https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-            k8s/deployment.yaml
-            k8s/service.yaml
+            k8s/rollout.yaml
+            k8s/service-stable.yaml
+            k8s/service-canary.yaml
+            k8s/ingress.yaml
             k8s/prometheusrule.yaml
             k8s/alertmanagerconfig.yaml
+            k8s/analysis-template.yaml
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
