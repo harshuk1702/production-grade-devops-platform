@@ -13,14 +13,14 @@ The application delivery platform, containerization, CI/CD, security, Kubernetes
 The current Kubernetes deployment is healthy with:
 
 ```text
-Deployment: devops-demo-api
+Rollout: devops-demo-api
 Namespace: default
 Replicas: 2
 Ready: 2/2
 Available: 2
 ```
 
-The deployment uses an immutable commit-SHA container image and a `RollingUpdate` strategy with:
+The Rollout uses an immutable commit-SHA container image and an Argo Rollouts canary strategy with:
 
 ```text
 maxUnavailable: 0
@@ -40,9 +40,12 @@ maxSurge: 1
 - Trivy container vulnerability scanning
 - Kubernetes manifest validation
 - GitHub Container Registry publishing
-- Kubernetes Deployment
-- Kubernetes Service
-- RollingUpdate deployment strategy
+- Argo Rollouts canary deployment
+- Stable and canary Kubernetes Services
+- NGINX ingress traffic routing
+- 10% → 50% → 100% progressive delivery
+- Prometheus-based canary analysis
+- Automated promotion and rollback
 - Readiness probe
 - Liveness probe
 - CPU and memory resource requests and limits
@@ -221,10 +224,6 @@ A validated trace can therefore be used to locate the corresponding application 
 ### Planned
 
 - Bidirectional Loki-to-Tempo trace navigation using Loki derived fields
-- Canary deployments
-- Traffic management
-- Automated promotion
-- Automated rollback
 - Remote/cloud Kubernetes deployment
 - Production-scale configuration management
 
@@ -234,7 +233,7 @@ A validated trace can therefore be used to locate the corresponding application 
 
 ### Current Architecture
 
-The current platform implements the application delivery pipeline together with metrics, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing.
+The current platform implements the application delivery pipeline together with progressive delivery, metrics, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing.
 
 ```text
 Developer
@@ -257,52 +256,74 @@ Pytest Tests          Docker Build       Kubernetes Validation
                  GitHub Container Registry
                            |
                            v
-                       Kubernetes
+                  Argo Rollouts
                            |
                     +------+------+
                     |             |
                     v             v
-               Deployment      Service
-               2 replicas      ClusterIP
-                    |
-                RollingUpdate
-                    |
-            +-------+-------+
-            |               |
-            v               v
-      Readiness Probe   Liveness Probe
-            |               |
-            +-------+-------+
+              Stable Service   Canary Service
+                    |             |
+                    +------+------+
+                           |
+                           v
+                    NGINX Ingress
+                           |
+                           v
+                    Progressive Traffic
+                           |
+                  +--------+--------+
+                  |        |        |
+                  v        v        v
+                10%      50%      100%
+               Canary    Canary   Stable
+                  |        |        |
+                  +--------+--------+
+                           |
+                           v
+                      FastAPI API
+                           |
+                +----------+----------+
+                |          |          |
+                v          v          v
+             Metrics     Logs      Traces
+                |          |          |
+                v          v          v
+           Prometheus    Alloy   OpenTelemetry
+                |          |          |
+                |          v          v
+                |        Loki      Tempo
+                |          |          |
+                +----------+----------+
+                           |
+                           v
+                        Grafana
+                           |
+                    +------+------+
+                    |             |
+                    v             v
+               PrometheusRule   Explore
                     |
                     v
-               FastAPI API
-                    |
-          +---------+---------+
-          |         |         |
-          v         v         v
-      Metrics     Logs      Traces
-          |         |         |
-          v         v         v
-     Prometheus   Alloy     OpenTelemetry
-          |         |         |
-          |         v         v
-          |       Loki      Tempo
-          |         |         |
-          +---------+---------+
+               Alertmanager
                     |
                     v
-                 Grafana
-                    |
-             +------+------+
-             |             |
-             v             v
-        PrometheusRule   Explore
-             |
-             v
-        Alertmanager
-             |
-             v
-           Discord
+                  Discord
+
+
+Canary Analysis
+      |
+      v
+Prometheus
+      |
+      v
+AnalysisTemplate
+      |
+      v
+Success Rate >= 0.95
+      |
+      +---- Pass ----> Continue Promotion
+      |
+      +---- Fail ----> Degraded / Previous Stable Revision
 
 
 Kubernetes Pod Logs
@@ -328,7 +349,6 @@ OpenTelemetry
         v
 Grafana Trace View
 ```
-
 The current architecture represents components that have been implemented and validated.
 
 ---
@@ -757,7 +777,7 @@ Controlled Application Traffic
 
 ## Target Architecture
 
-The target architecture represents the planned final state of the platform, including distributed tracing, progressive delivery, centralized observability, SLO-driven operations, and automated rollback.
+The target architecture builds on the implemented platform capabilities, including distributed tracing, progressive delivery, centralized observability, SLO-driven operations, and automated rollback, with remote/cloud Kubernetes and production-scale configuration remaining as future stages.
 
 ```text
 Developer
@@ -824,7 +844,7 @@ Automated Tests       Docker Build       Kubernetes Validation
 
 Components are marked as implemented only after they have been deployed and validated.
 
-Distributed tracing is now implemented and validated. Progressive delivery remains a future milestone.
+Distributed tracing and progressive delivery are now implemented and validated, including controlled canary promotion and automated rollback validation.
 
 ---
 
@@ -863,9 +883,14 @@ Distributed tracing is now implemented and validated. Progressive delivery remai
 ### Kubernetes
 
 - Kubernetes
-- Deployment
-- Service
-- RollingUpdate strategy
+- Argo Rollouts
+- Stable and canary Services
+- NGINX Ingress traffic routing
+- Canary rollout strategy
+- Progressive delivery: 10% → 50% → 100%
+- Prometheus-based canary analysis
+- Automated promotion
+- Automated rollback validation
 - Readiness probes
 - Liveness probes
 - Resource requests and limits
@@ -913,13 +938,13 @@ Distributed tracing is now implemented and validated. Progressive delivery remai
 - Bidirectional Loki-to-Tempo trace navigation
 - Loki derived fields for trace navigation
 
-### Planned Progressive Delivery
+### Progressive Delivery
 
-- Canary deployments
-- Traffic management
-- Canary validation
+- Argo Rollouts canary deployments
+- Stable and canary traffic management
+- Prometheus canary validation
 - Automated promotion
-- Automated rollback
+- Automated rollback validation
 
 ---
 
@@ -1421,7 +1446,7 @@ The CI pipeline publishes:
 :<commit-sha>
 ```
 
-The Kubernetes Deployment uses an immutable commit-SHA image reference.
+The Kubernetes Rollout uses an immutable commit-SHA image reference.
 
 Example:
 
@@ -1437,48 +1462,81 @@ This ensures that Kubernetes deployments reference a specific immutable image ve
 
 ## Kubernetes
 
-The application is deployed to Kubernetes using a Deployment and Service.
+The application is deployed to Kubernetes using an Argo Rollout with dedicated stable and canary Services.
 
-### Deployment
+### Argo Rollouts
 
-The Deployment runs:
+The application is managed by an Argo Rollouts `Rollout` resource with:
 
 ```text
 2 replicas
 ```
 
-The deployment strategy is:
-
-```yaml
-strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxUnavailable: 0
-    maxSurge: 1
-```
-
-This ensures that Kubernetes maintains application availability during a rolling update.
-
-The current deployment state has been validated as:
+The rollout uses a canary strategy with progressive traffic weights:
 
 ```text
-READY        2/2
-UP-TO-DATE   2
-AVAILABLE    2
+10% Canary
+    |
+    v
+Prometheus Analysis
+    |
+    v
+50% Canary
+    |
+    v
+Prometheus Analysis
+    |
+    v
+100% Promotion
 ```
 
-### Service
-
-The application is exposed internally through a Kubernetes `ClusterIP` Service.
+The stable and canary Services are:
 
 ```text
-Service
-   |
-   v
-devops-demo-api:8000
-   |
-   v
-Application Pods
+devops-demo-api-stable
+devops-demo-api-canary
+```
+
+Traffic routing is provided through the NGINX ingress:
+
+```text
+Client
+  |
+  v
+NGINX Ingress
+  |
+  +------------------+
+  |                  |
+  v                  v
+Stable Service    Canary Service
+  |                  |
+  +--------+---------+
+           |
+           v
+     FastAPI Pods
+```
+
+The canary is validated using the Prometheus AnalysisTemplate:
+
+```text
+devops-demo-api-success-rate
+```
+
+The production success condition is:
+
+```text
+result[0] >= 0.95
+```
+
+A failed canary analysis causes the Rollout to enter a degraded state while the previous stable revision remains available.
+
+The current Rollout state has been validated as:
+
+```text
+Healthy
+Replicas: 2
+Available: 2
+Stable revision: current healthy revision
 ```
 
 ### Resource Management
@@ -2793,116 +2851,149 @@ OpenTelemetry
 
 ---
 
-## Rolling Updates
+## Progressive Delivery
 
-The Kubernetes Deployment uses a rolling update strategy.
+The application uses **Argo Rollouts** to implement progressive canary delivery instead of a traditional Kubernetes Deployment rolling update.
 
-The update process is:
+The rollout strategy is:
 
-```text
-Existing Version
-      |
-      v
-Create New Pod
-      |
-      v
-Readiness Probe
-      |
-      v
-New Pod Becomes Ready
-      |
-      v
-Terminate Old Pod
-      |
-      v
-Repeat
-      |
-      v
-New Version Fully Deployed
-```
+`	ext
+Current Stable Revision
+          |
+          v
+      Canary 10%
+          |
+          v
+ Prometheus Analysis
+          |
+          v
+       Pause 30s
+          |
+          v
+      Canary 50%
+          |
+          v
+ Prometheus Analysis
+          |
+          v
+       Pause 30s
+          |
+          v
+     Canary 100%
+          |
+          v
+   New Revision Stable
+`
 
-The rollout can be inspected using:
+Traffic is controlled through dedicated Kubernetes Services and NGINX Ingress routing:
 
-```powershell
-kubectl rollout status deployment/devops-demo-api
-```
+`	ext
+                    NGINX Ingress
+                         |
+              +----------+----------+
+              |                     |
+              v                     v
+       Stable Service       Canary Service
+              |                     |
+              v                     v
+       Stable Pods            Canary Pods
+`
 
-Deployment history:
+The Rollout automatically evaluates the canary using the Prometheus AnalysisTemplate:
 
-```powershell
-kubectl rollout history deployment/devops-demo-api
-```
+`	ext
+HTTP Success Rate >= 0.95
+`
 
-A previous revision can be rolled back using:
+The analysis runs at the 10% and 50% stages. If the success-rate analysis fails, the Rollout enters a degraded state and the previous stable revision remains available.
 
-```powershell
-kubectl rollout undo deployment/devops-demo-api
-```
+A successful rollout automatically promotes the canary to 100% and makes the new revision stable.
 
-The current deployment strategy is:
+The Rollout can be inspected using:
 
-```text
-RollingUpdate
+`powershell
+kubectl get rollout devops-demo-api
+kubectl argo rollouts get rollout devops-demo-api
+`
 
-maxUnavailable: 0
+A live rollout can be watched using:
 
-maxSurge: 1
-```
+`powershell
+kubectl argo rollouts get rollout devops-demo-api --watch
+`
 
----
+AnalysisRuns can be inspected using:
+
+`powershell
+kubectl get analysisruns
+`
+
+The Prometheus AnalysisTemplate is managed as Kubernetes configuration in:
+
+`	ext
+k8s/analysis-template.yaml
+`
+
+The production success-rate threshold is:
+
+`	ext
+>= 0.95
+`
+
+This provides controlled progressive delivery with automated validation, promotion, and rollback behavior.
 
 ## Repository Structure
 
 ```text
 production-grade-devops-platform/
 |
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-│
-├── application/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   └── main.py
-│   │
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   └── test_api.py
-│   │
-│   ├── Dockerfile
-│   ├── pytest.ini
-│   └── requirements.txt
-│
-├── docs/
-│
-├── k8s/
-│   ├── alertmanagerconfig.yaml
-│   ├── alloy-values.yaml
-│   ├── deployment.yaml
-│   ├── monitoring-values.yaml
-│   ├── prometheusrule.yaml
-│   ├── service.yaml
-│   └── tempo-values.yaml
-│
-├── scripts/
-│   └── deploy.ps1
-│
-├── .gitignore
-└── README.md
+â”œâ”€â”€ .github/
+â”‚   â””â”€â”€ workflows/
+â”‚       â””â”€â”€ ci.yml
+â”‚
+â”œâ”€â”€ application/
+â”‚   â”œâ”€â”€ app/
+â”‚   â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”‚   â””â”€â”€ main.py
+â”‚   â”‚
+â”‚   â”œâ”€â”€ tests/
+â”‚   â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”‚   â””â”€â”€ test_api.py
+â”‚   â”‚
+â”‚   â”œâ”€â”€ Dockerfile
+â”‚   â”œâ”€â”€ pytest.ini
+â”‚   â””â”€â”€ requirements.txt
+â”‚
+â”œâ”€â”€ docs/
+â”‚
+â”œâ”€â”€ k8s/
+â”‚   â”œâ”€â”€ alertmanagerconfig.yaml
+â”‚   â”œâ”€â”€ alloy-values.yaml
+â”‚   â”œâ”€â”€ deployment.yaml
+â”‚   â”œâ”€â”€ monitoring-values.yaml
+â”‚   â”œâ”€â”€ prometheusrule.yaml
+â”‚   â”œâ”€â”€ service.yaml
+â”‚   â””â”€â”€ tempo-values.yaml
+â”‚
+â”œâ”€â”€ scripts/
+â”‚   â””â”€â”€ deploy.ps1
+â”‚
+â”œâ”€â”€ .gitignore
+â””â”€â”€ README.md
 ```
 
 ---
 
 ## Implementation Roadmap
 
-### Phase 1 — Application Foundation
+### Phase 1 â€” Application Foundation
 
 - [x] FastAPI application
 - [x] Health endpoint
 - [x] API endpoints
 - [x] Automated tests
 
-### Phase 2 — Containerization
+### Phase 2 â€” Containerization
 
 - [x] Dockerfile
 - [x] Docker image
@@ -2911,7 +3002,7 @@ production-grade-devops-platform/
 - [x] Container validation
 - [x] Container security hardening
 
-### Phase 3 — CI/CD
+### Phase 3 â€” CI/CD
 
 - [x] GitHub Actions
 - [x] Automated test pipeline
@@ -2921,18 +3012,19 @@ production-grade-devops-platform/
 - [x] GitHub Container Registry
 - [x] Commit-SHA image tagging
 
-### Phase 4 — Kubernetes
+### Phase 4 â€” Kubernetes
 
-- [x] Kubernetes Deployment
-- [x] Kubernetes Service
+- [x] Argo Rollouts
+- [x] Stable and canary Services
+- [x] NGINX ingress traffic routing
 - [x] Readiness probe
 - [x] Liveness probe
 - [x] Resource requests and limits
 - [x] Kubernetes security context
-- [x] RollingUpdate strategy
+- [x] Canary rollout strategy
 - [ ] ConfigMap / application Secrets
 
-### Phase 5 — Observability and Reliability
+### Phase 5 â€” Observability and Reliability
 
 - [x] Application metrics
 - [x] Prometheus
@@ -2969,16 +3061,16 @@ production-grade-devops-platform/
 - [x] Tempo-to-Loki trace-to-log correlation
 - [ ] Loki derived fields for direct log-to-trace navigation
 
-### Phase 6 — Progressive Delivery
+### Phase 6 â€” Progressive Delivery
 
-- [ ] Stable deployment
-- [ ] Canary deployment
-- [ ] Traffic management
-- [ ] Canary validation
-- [ ] Automated promotion
-- [ ] Automated rollback
+- [x] Stable deployment
+- [x] Canary deployment
+- [x] Traffic management
+- [x] Canary validation with Prometheus AnalysisTemplate
+- [x] Automated promotion
+- [x] Automated rollback validation
 
-### Phase 7 — Cloud / Remote Kubernetes
+### Phase 7 â€” Cloud / Remote Kubernetes
 
 - [ ] Remote Kubernetes cluster
 - [ ] Cloud container registry integration
@@ -3050,7 +3142,7 @@ Kubernetes
 
     +
 
-Rolling Updates
+Progressive Canary Delivery
 
     +
 
@@ -3152,7 +3244,7 @@ Trace-to-Log Correlation
 The current Kubernetes deployment has also been validated after controlled scaling:
 
 ```text
-Deployment: devops-demo-api
+Rollout: devops-demo-api
 
 Initial state:
 
@@ -3307,231 +3399,63 @@ The platform has therefore progressed from basic monitoring into a three-pillar 
                  Grafana
 ```
 
-The next major milestone is **progressive delivery and canary deployment**.
+The next major milestone is **remote/cloud Kubernetes deployment**.
 
 ---
 
 ## Next Task
 
-The next implementation task starts with:
-
-```text
-PHASE 6 — PROGRESSIVE DELIVERY
-
-        |
-
-        v
-
-STABLE DEPLOYMENT
-
-        |
-
-        v
-
-CANARY DEPLOYMENT
-
-        |
-
-        v
-
-TRAFFIC MANAGEMENT
-
-        |
-
-        v
-
-CANARY VALIDATION
-
-        |
-
-        v
-
-AUTOMATED PROMOTION
-
-        |
-
-        v
-
-AUTOMATED ROLLBACK
-```
-
-The distributed tracing milestone has been completed.
-
-The current observability foundation includes:
-
-```text
-Metrics
-    |
-    v
-Prometheus
-    |
-    v
-Grafana
-
-Logs
-    |
-    v
-Grafana Alloy
-    |
-    v
-Loki
-    |
-    v
-Grafana
-
-Traces
-    |
-    v
-OpenTelemetry
-    |
-    v
-Tempo
-    |
-    v
-Grafana
-```
-
-The tracing implementation provides:
-
-- OpenTelemetry instrumentation for the FastAPI application
-- OTLP trace export
-- Tempo trace storage
-- Grafana trace visualization
-- Trace IDs in structured application logs
-- Span IDs in structured application logs
-- Trace ID queries in Loki
-- Tempo-to-Loki trace-to-log correlation
-
-The remaining observability enhancement is bidirectional navigation from Loki logs directly back to Tempo using Loki derived fields.
-
-The next major implementation task is:
-
-**Implement progressive delivery with a stable deployment and canary deployment strategy.**
-
-The progressive delivery implementation should build on the existing Kubernetes, monitoring, alerting, SLO, logging, and tracing foundation rather than replacing the current platform.
-
-The planned progressive delivery flow is:
-
-```text
-Existing Kubernetes Deployment
-        |
-        v
-Stable Version
-        |
-        +----------------+
-        |                |
-        v                v
-     Stable           Canary
-        |                |
-        +-------+--------+
-                |
-                v
-       Traffic Management
-                |
-                v
-        Canary Validation
-                |
-        +-------+-------+
-        |               |
-        v               v
-      Healthy        Unhealthy
-        |               |
-        v               v
-Automated Promotion  Automated Rollback
-```
-
-Canary validation should use the existing observability foundation:
-
-```text
-Canary
-  |
-  +------------------+------------------+
-  |                  |                  |
-  v                  v                  v
-Metrics             Logs              Traces
-  |                  |                  |
-  v                  v                  v
-Prometheus           Loki              Tempo
-  |                  |                  |
-  +------------------+------------------+
-                     |
-                     v
-                  Grafana
-                     |
-                     v
-              Canary Decision
-```
-
-This keeps the project progression logical:
-
-```text
-Application
-
-    ↓
-
-Containerization
-
-    ↓
-
-CI/CD
-
-    ↓
-
-Kubernetes
-
-    ↓
-
-Metrics
-
-    ↓
-
-Monitoring
-
-    ↓
-
-Alerting
-
-    ↓
-
-SLOs / Reliability Engineering
-
-    ↓
-
-Centralized Logging
-
-    ↓
-
-Distributed Tracing
-
-    ↓
-
-Trace-to-Log Correlation
-
-    ↓
-
-Advanced Observability
-
-    ↓
-
-Progressive Delivery
-
-    ↓
-
-Canary Deployment
-
-    ↓
-
-Traffic Management
-
-    ↓
-
-Automated Promotion
-
-    ↓
-
-Automated Rollback
-```
-
-The platform is intentionally implemented in validated stages so that each capability is operational before the next architectural layer is introduced.
-
----
+The next implementation milestone is **Phase 7 â€” Remote/Cloud Kubernetes Deployment**.
+
+Phase 6 â€” Progressive Delivery is now implemented and validated, including:
+
+- Argo Rollouts canary delivery
+- Stable and canary Services
+- NGINX ingress traffic routing
+- 10% â†’ 50% â†’ 100% progressive delivery
+- Prometheus-based canary analysis
+- Automated promotion
+- Automated rollback validation
+
+The next phase extends the validated local Kubernetes platform into a remote or cloud-hosted Kubernetes environment.
+
+### Phase 7 â€” Remote/Cloud Kubernetes Deployment
+
+Planned objectives:
+
+- Deploy the application to a remote/cloud Kubernetes cluster.
+- Configure production-grade cluster access and namespace management.
+- Configure external ingress and application access.
+- Preserve the existing Argo Rollouts canary strategy.
+- Deploy the Prometheus monitoring and alerting stack in the remote environment.
+- Preserve centralized logging and distributed tracing.
+- Integrate CI/CD with the remote Kubernetes deployment workflow.
+- Introduce appropriate application configuration and Secrets management.
+- Validate health checks, metrics, alerts, logs, traces, and progressive delivery remotely.
+- Document the deployment, operational procedures, and rollback workflow.
+
+The intended progression is:
+
+`	ext
+Validated Local Kubernetes Platform
+              |
+              v
+       Remote / Cloud Cluster
+              |
+              v
+      Application Deployment
+              |
+              v
+     Observability Stack
+              |
+              v
+   CI/CD Remote Deployment
+              |
+              v
+   Progressive Delivery
+              |
+              v
+ Production Validation
+`
+
+The project will continue to build on the existing implementation rather than replacing the validated Kubernetes, observability, reliability, and progressive delivery foundations.
