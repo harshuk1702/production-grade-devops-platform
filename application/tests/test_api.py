@@ -14,7 +14,7 @@ def test_root():
     data = response.json()
 
     assert data["message"] == "DevOps Demo API"
-    assert data["version"] == "1.0.0"
+    assert data["version"] == "1.1.0"
 
 
 def test_health_check():
@@ -26,7 +26,7 @@ def test_health_check():
 
     assert data["status"] == "healthy"
     assert data["service"] == "devops-demo-api"
-    assert data["version"] == "1.0.0"
+    assert data["version"] == "1.1.0"
 
 
 def test_products():
