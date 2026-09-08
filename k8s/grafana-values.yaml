@@ -1,0 +1,47 @@
+replicas: 1
+
+persistence:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: ClusterIP
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        url: http://monitoring-prometheus-server.monitoring.svc.cluster.local
+        access: proxy
+        isDefault: true
+
+      - name: Loki
+        type: loki
+        uid: loki
+        url: http://loki.loki.svc.cluster.local:3100
+        access: proxy
+        isDefault: false
+
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        url: http://tempo.tempo.svc.cluster.local:3200
+        access: proxy
+        isDefault: false
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: "-2s"
+            spanEndTimeShift: "2s"
+            filterByTraceID: true
+            filterBySpanID: false

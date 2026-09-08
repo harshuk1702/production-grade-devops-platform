@@ -5,6 +5,10 @@ metadata:
   namespace: default
   labels:
     app: devops-demo-api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics/"
+    prometheus.io/port: "8000"
 spec:
   selector:
     app: devops-demo-api

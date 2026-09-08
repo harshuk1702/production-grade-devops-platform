@@ -14,6 +14,6 @@ spec:
         prometheus:
           address: http://monitoring-prometheus-server.monitoring.svc.cluster.local:80
           query: |
-            sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",path="/",status=~"2.."}[5m]))
+            sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service="devops-demo-api-canary",path="/",status=~"2.."}[5m]))
             /
-            sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",path="/"}[5m]))
+            sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service="devops-demo-api-canary",path="/"}[5m]))

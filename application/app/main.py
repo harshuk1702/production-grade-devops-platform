@@ -175,7 +175,7 @@ app.mount("/metrics", metrics_app)
 def root():
     return {
         "message": "DevOps Demo API",
-        "version": "1.0.0",
+        "version": "1.1.0",
     }
 
 
@@ -184,7 +184,7 @@ def health_check():
     return {
         "status": "healthy",
         "service": "devops-demo-api",
-        "version": "1.0.0",
+        "version": "1.1.0",
     }
 
 
