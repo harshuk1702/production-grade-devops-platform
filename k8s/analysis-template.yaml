@@ -12,8 +12,8 @@ spec:
       failureLimit: 1
       provider:
         prometheus:
-          address: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+          address: http://monitoring-prometheus-server.monitoring.svc.cluster.local:80
           query: |
-            sum(rate(http_requests_total{job="devops-demo-api",path="/",status=~"2.."}[1m]))
+            sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",path="/",status=~"2.."}[5m]))
             /
-            sum(rate(http_requests_total{job="devops-demo-api",path="/"}[1m]))
+            sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",path="/"}[5m]))

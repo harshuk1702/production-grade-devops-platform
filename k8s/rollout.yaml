@@ -53,7 +53,7 @@ spec:
 
       containers:
         - name: devops-demo-api
-          image: ghcr.io/harshuk1702/devops-demo-api:930effe4a85b9f33c64d09da55d7c41b2ac78ac7
+          image: 592685884777.dkr.ecr.ap-south-1.amazonaws.com/devops-demo-api:aws-6e20cc1
 
           ports:
             - containerPort: 8000
