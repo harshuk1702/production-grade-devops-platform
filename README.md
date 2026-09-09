@@ -39,7 +39,7 @@ maxSurge: 1
 - Docker image build in CI
 - Trivy container vulnerability scanning
 - Kubernetes manifest validation
-- GitHub Container Registry publishing
+- Amazon ECR image publishing
 - Argo Rollouts canary deployment
 - Stable and canary Kubernetes Services
 - NGINX ingress traffic routing
@@ -253,7 +253,7 @@ Pytest Tests          Docker Build       Kubernetes Validation
                     Trivy Security Scan
                            |
                            v
-                 GitHub Container Registry
+                 Amazon ECR
                            |
                            v
                   Argo Rollouts
@@ -877,7 +877,7 @@ Distributed tracing and progressive delivery are now implemented and validated, 
 - Docker image builds
 - Trivy vulnerability scanning
 - Kubernetes manifest validation
-- GitHub Container Registry
+- Amazon ECR
 - Commit-SHA image tagging
 
 ### Kubernetes
@@ -895,7 +895,7 @@ Distributed tracing and progressive delivery are now implemented and validated, 
 - Liveness probes
 - Resource requests and limits
 - SecurityContext
-- GHCR imagePullSecret
+- ECR image access through AWS IAM
 
 ### Observability
 
@@ -1400,7 +1400,7 @@ Trivy Vulnerability Scan
 Validate Kubernetes Manifests
    |
    v
-Login to GHCR
+Login to Amazon ECR
    |
    v
 Tag Docker Image
@@ -1431,12 +1431,12 @@ exit-code: "1"
 
 ## Container Registry
 
-Docker images are published to GitHub Container Registry.
+Docker images are published to Amazon ECR.
 
 The image repository follows:
 
 ```text
-ghcr.io/<github-owner>/devops-demo-api
+592685884777.dkr.ecr.ap-south-1.amazonaws.com/devops-demo-api
 ```
 
 The CI pipeline publishes:
@@ -1451,7 +1451,7 @@ The Kubernetes Rollout uses an immutable commit-SHA image reference.
 Example:
 
 ```text
-ghcr.io/harshuk1702/devops-demo-api:<commit-sha>
+592685884777.dkr.ecr.ap-south-1.amazonaws.com/devops-demo-api:<commit-sha>
 ```
 
 The currently deployed image should always be verified directly from Kubernetes rather than hard-coded in this README.
@@ -1632,7 +1632,7 @@ kubectl get deployment devops-demo-api -o jsonpath="{.spec.template.spec.contain
 Expected format:
 
 ```text
-ghcr.io/harshuk1702/devops-demo-api:<commit-sha>
+592685884777.dkr.ecr.ap-south-1.amazonaws.com/devops-demo-api:<commit-sha>
 ```
 
 ### Verify Deployment Replica Metrics
@@ -3009,7 +3009,7 @@ production-grade-devops-platform/
 - [x] Docker image build in CI
 - [x] Container vulnerability scanning
 - [x] Kubernetes manifest validation
-- [x] GitHub Container Registry
+- [x] Amazon ECR
 - [x] Commit-SHA image tagging
 
 ### Phase 4 â€” Kubernetes
@@ -3070,14 +3070,15 @@ production-grade-devops-platform/
 - [x] Automated promotion
 - [x] Automated rollback validation
 
-### Phase 7 â€” Cloud / Remote Kubernetes
+### Phase 7 — Cloud / Remote Kubernetes
 
-- [ ] Remote Kubernetes cluster
-- [ ] Cloud container registry integration
-- [ ] Remote deployment
+- [x] Remote Kubernetes cluster with Amazon EKS
+- [x] Amazon ECR container registry integration
+- [x] Remote deployment through GitHub Actions
 - [ ] Production configuration management
-- [ ] External traffic management
-- [ ] Production observability
+- [x] External traffic management
+- [x] Production observability
+- [x] Remote health, rollout, logging, tracing, and monitoring validation
 
 ---
 
@@ -3399,63 +3400,92 @@ The platform has therefore progressed from basic monitoring into a three-pillar 
                  Grafana
 ```
 
-The next major milestone is **remote/cloud Kubernetes deployment**.
+The remote/cloud Kubernetes deployment is now implemented and validated on Amazon EKS.
 
 ---
 
-## Next Task
+## Current Status
 
-The next implementation milestone is **Phase 7 â€” Remote/Cloud Kubernetes Deployment**.
+The project has progressed beyond the original local Kubernetes milestone and now includes a production-style remote deployment workflow.
 
-Phase 6 â€” Progressive Delivery is now implemented and validated, including:
+### Phase 7 — Remote/Cloud Kubernetes Deployment — Implemented
 
-- Argo Rollouts canary delivery
+The application is deployed to an Amazon EKS cluster in AWS and is integrated with the existing Kubernetes and progressive-delivery architecture.
+
+Implemented and validated:
+
+- Amazon EKS cluster deployment
+- Managed EC2 worker nodes
+- Production Kubernetes access configuration
+- GitHub Actions OIDC authentication with AWS IAM
+- Least-privilege ECR image publishing permissions
+- EKS cluster access through AWS IAM and Kubernetes RBAC
+- Amazon ECR as the production container registry
+- GitHub Actions CI/CD integration with EKS
+- Immutable production image tagging using Git commit SHA
+- External NGINX ingress and production application access
+- Argo Rollouts progressive delivery on EKS
 - Stable and canary Services
-- NGINX ingress traffic routing
-- 10% â†’ 50% â†’ 100% progressive delivery
 - Prometheus-based canary analysis
 - Automated promotion
 - Automated rollback validation
+- Prometheus monitoring and SLO alerting
+- Centralized logging with Loki and Grafana Alloy
+- Distributed tracing with Grafana Tempo
+- Grafana dashboards and observability data sources
+- Trace correlation between Tempo and Loki
+- Remote production health and endpoint validation
 
-The next phase extends the validated local Kubernetes platform into a remote or cloud-hosted Kubernetes environment.
+### Production Validation
 
-### Phase 7 â€” Remote/Cloud Kubernetes Deployment
+The remote deployment has been validated end-to-end:
 
-Planned objectives:
-
-- Deploy the application to a remote/cloud Kubernetes cluster.
-- Configure production-grade cluster access and namespace management.
-- Configure external ingress and application access.
-- Preserve the existing Argo Rollouts canary strategy.
-- Deploy the Prometheus monitoring and alerting stack in the remote environment.
-- Preserve centralized logging and distributed tracing.
-- Integrate CI/CD with the remote Kubernetes deployment workflow.
-- Introduce appropriate application configuration and Secrets management.
-- Validate health checks, metrics, alerts, logs, traces, and progressive delivery remotely.
-- Document the deployment, operational procedures, and rollback workflow.
-
-The intended progression is:
-
-`	ext
-Validated Local Kubernetes Platform
+`       GitHub Actions
               |
               v
-       Remote / Cloud Cluster
+       Docker Build + Test
               |
               v
-      Application Deployment
+       Trivy Security Scan
               |
               v
-     Observability Stack
+          Amazon ECR
               |
               v
-   CI/CD Remote Deployment
+       Amazon EKS Cluster
               |
               v
-   Progressive Delivery
+       Argo Rollouts
+              |
+        +-----+-----+
+        |           |
+        v           v
+     Stable      Canary
+        |           |
+        +-----+-----+
               |
               v
- Production Validation
+        Prometheus Analysis
+              |
+              v
+      Automated Promotion
+              |
+              v
+     Production Validation
+              |
+        +-----+-----+
+        |           |
+        v           v
+      Loki        Tempo
+        |           |
+        +-----+-----+
+              |
+              v
+           Grafana
 `
 
-The project will continue to build on the existing implementation rather than replacing the validated Kubernetes, observability, reliability, and progressive delivery foundations.
+The production deployment uses immutable Git commit SHA image tags and validates the expected image, rollout generation, and Healthy rollout state before the CI/CD workflow succeeds.
+
+The project now has a complete validated path from source control through container build, security scanning, ECR publishing, EKS deployment, progressive delivery, observability, and production verification.
+
+The remaining work is primarily documentation refinement, cleanup of historical/stale README references, and final project presentation for portfolio and CV use.
