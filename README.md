@@ -3409,7 +3409,7 @@ The project has progressed beyond the original local Kubernetes milestone and no
 
 ### Phase 7 — Remote/Cloud Kubernetes Deployment — Implemented
 
-The application is deployed to an Amazon EKS cluster in AWS and is integrated with the existing Kubernetes and progressive-delivery architecture.
+The application was deployed to an Amazon EKS cluster in AWS and validated as an integrated remote implementation of the existing Kubernetes and progressive-delivery architecture.
 
 Implemented and validated:
 
@@ -3487,4 +3487,4 @@ The production deployment uses immutable Git commit SHA image tags and validates
 
 The project now has a complete validated path from source control through container build, security scanning, ECR publishing, EKS deployment, progressive delivery, observability, and production verification.
 
-The remaining work is primarily documentation refinement, cleanup of historical/stale README references, and final project presentation for portfolio and CV use.
+The AWS environment was intentionally torn down after successful production validation to avoid ongoing infrastructure costs. The validated implementation, configuration, CI/CD workflow, and deployment evidence remain preserved in this repository.
