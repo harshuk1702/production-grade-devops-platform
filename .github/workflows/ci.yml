@@ -75,27 +75,27 @@ jobs:
             k8s/analysis-template.yaml
 
       - name: Configure AWS credentials
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::592685884777:role/GitHubActions-EKS-Deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Verify AWS identity
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch'
         run: aws sts get-caller-identity
 
       - name: Log in to Amazon ECR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Tag production image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           docker tag devops-demo-api:ci ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Push production image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
