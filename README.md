@@ -2976,7 +2976,6 @@ production-grade-devops-platform/
 â”‚   â””â”€â”€ tempo-values.yaml
 â”‚
 â”œâ”€â”€ scripts/
-â”‚   â””â”€â”€ deploy.ps1
 â”‚
 â”œâ”€â”€ .gitignore
 â””â”€â”€ README.md

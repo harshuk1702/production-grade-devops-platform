@@ -48,8 +48,6 @@ spec:
     spec:
       terminationGracePeriodSeconds: 30
 
-      imagePullSecrets:
-        - name: ghcr-secret
 
       containers:
         - name: devops-demo-api
