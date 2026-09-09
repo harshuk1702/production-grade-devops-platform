@@ -1,4 +1,4 @@
-# Production-Grade DevOps Platform
+﻿# Production-Grade DevOps Platform
 
 A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, observability, reliability engineering, centralized logging, distributed tracing, and progressive delivery.
 
