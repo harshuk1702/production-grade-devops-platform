@@ -1,0 +1,122 @@
+alertmanager:
+  enabled: false
+
+fullnameOverride: monitoring-kube-prometheus-prometheus
+
+prometheus-node-exporter:
+  enabled: false
+
+pushgateway:
+  enabled: false
+
+server:
+  persistentVolume:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: devops-demo-api
+        interval: 30s
+        rules:
+          - alert: DevOpsDemoAPIHigh5xxErrorRate
+            expr: |
+              (
+                sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/",status=~"5.."}[5m]))
+                /
+                sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/"}[5m]))
+              ) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+              service: devops-demo-api
+            annotations:
+              summary: "DevOps Demo API has a high 5xx error rate"
+              description: "More than 5% of API requests have returned 5xx responses for 5 minutes."
+
+          - alert: DevOpsDemoAPIHighP95Latency
+            expr: |
+              histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/"}[5m]))) > 0.5
+            for: 5m
+            labels:
+              severity: warning
+              service: devops-demo-api
+            annotations:
+              summary: "DevOps Demo API p95 latency is high"
+              description: "The API p95 request latency has exceeded 500ms for 5 minutes."
+
+          - alert: DevOpsDemoAPINotReady
+            expr: |
+              sum(kube_pod_container_status_ready{namespace="default",container="devops-demo-api"}) < 2
+            for: 5m
+            labels:
+              severity: critical
+              service: devops-demo-api
+            annotations:
+              summary: "DevOps Demo API has fewer than 2 ready containers"
+              description: "The API has fewer than the expected 2 ready containers for 5 minutes."
+
+          - alert: DevOpsDemoAPIContainerRestarts
+            expr: |
+              increase(kube_pod_container_status_restarts_total{namespace="default",container="devops-demo-api"}[15m]) > 2
+            for: 5m
+            labels:
+              severity: warning
+              service: devops-demo-api
+            annotations:
+              summary: "DevOps Demo API containers are restarting"
+              description: "An API container has restarted more than twice within 15 minutes."
+
+          - alert: DevOpsDemoAPIAvailabilitySLOViolation
+            expr: devops_demo_api:availability:5m < 0.99
+            for: 10m
+            labels:
+              severity: critical
+              service: devops-demo-api
+            annotations:
+              summary: "DevOps Demo API availability is below 99%"
+              description: "The API availability SLI has remained below the 99% SLO for 10 minutes."
+
+          - alert: DevOpsDemoAPIFastErrorBudgetBurn
+            expr: devops_demo_api:error_rate:5m > 0.10
+            for: 5m
+            labels:
+              severity: critical
+              service: devops-demo-api
+            annotations:
+              summary: "DevOps Demo API is rapidly consuming error budget"
+              description: "The API error rate has exceeded 10% for 5 minutes."
+
+  recording_rules.yml:
+    groups:
+      - name: devops-demo-api
+        interval: 30s
+        rules:
+          - record: devops_demo_api:request_rate:5m
+            expr: |
+              sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/"}[5m]))
+
+          - record: devops_demo_api:successful_request_rate:5m
+            expr: |
+              sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/",status=~"2.."}[5m]))
+
+          - record: devops_demo_api:availability:5m
+            expr: |
+              sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/",status=~"2.."}[5m]))
+              /
+              sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/"}[5m]))
+
+          - record: devops_demo_api:error_rate:5m
+            expr: |
+              1 - (
+                sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/",status=~"2.."}[5m]))
+                /
+                sum(rate(http_requests_total{job="kubernetes-service-endpoints",app="devops-demo-api",service=~"devops-demo-api-(stable|canary)",path="/"}[5m]))
+              )
