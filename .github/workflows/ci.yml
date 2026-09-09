@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -10,7 +10,13 @@ on:
 
 permissions:
   contents: read
-  packages: write
+  id-token: write
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: devops-demo-api
+  ECR_REGISTRY: 592685884777.dkr.ecr.ap-south-1.amazonaws.com
+  EKS_CLUSTER: devops-platform
 
 jobs:
   test:
@@ -67,23 +73,89 @@ jobs:
             k8s/alertmanagerconfig.yaml
             k8s/analysis-template.yaml
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Configure AWS credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          role-to-assume: arn:aws:iam::592685884777:role/GitHubActions-EKS-Deploy
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Tag Docker image
-        run: |
-          docker tag devops-demo-api:ci ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
-          docker tag devops-demo-api:ci ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
+      - name: Verify AWS identity
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: aws sts get-caller-identity
 
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:ci
-          docker push ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
+      - name: Log in to Amazon ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Verify pushed image
+      - name: Tag production image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          docker manifest inspect ghcr.io/${{ github.repository_owner }}/devops-demo-api:${{ github.sha }}
+          docker tag devops-demo-api:ci ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Push production image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::592685884777:role/GitHubActions-EKS-Deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER }}
+
+      - name: Verify Kubernetes access
+        run: kubectl get pods -n default
+
+      - name: Update Argo Rollout image
+        run: |
+          sed -i "s#image: .*devops-demo-api:.*#image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}#" k8s/rollout.yaml
+          kubectl apply -f k8s/rollout.yaml
+
+      - name: Wait for Argo Rollout
+        run: |
+          set -euo pipefail
+
+          expected_image="${ECR_REGISTRY}/${ECR_REPOSITORY}:${GITHUB_SHA}"
+
+          for i in {1..120}; do
+            generation="$(kubectl get rollout devops-demo-api -n default -o jsonpath='{.metadata.generation}')"
+            observed="$(kubectl get rollout devops-demo-api -n default -o jsonpath='{.status.observedGeneration}')"
+            phase="$(kubectl get rollout devops-demo-api -n default -o jsonpath='{.status.phase}')"
+            image="$(kubectl get rollout devops-demo-api -n default -o jsonpath='{.spec.template.spec.containers[0].image}')"
+
+            echo "generation=${generation} observed=${observed} phase=${phase} image=${image}"
+
+            if [[ "${generation}" == "${observed}" && "${phase}" == "Healthy" && "${image}" == "${expected_image}" ]]; then
+              echo "Rollout is Healthy and running the expected image."
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "Rollout did not become Healthy with the expected image."
+          kubectl describe rollout devops-demo-api -n default
+          kubectl get pods -n default -l app=devops-demo-api -o wide
+          exit 1
+
+      - name: Verify production rollout
+        run: |
+          kubectl get rollout devops-demo-api -n default
+          kubectl get pods -n default -l app=devops-demo-api -o wide
