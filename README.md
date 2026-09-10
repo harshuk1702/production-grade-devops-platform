@@ -3696,49 +3696,6 @@ Validated failed-analysis rollback
 
 ---
 
-## Evidence Screenshot Plan
-
-The recommended README evidence set is 8–12 high-value screenshots.
-
-1. **GitHub Actions CI**
-   - Successful test/build/scan workflow
-2. **Successful production deployment**
-   - GitHub Actions ECR/EKS deployment run
-3. **EKS deployment state**
-   - Nodes, Pods, Rollout, and Ready/Available replicas
-4. **Argo Rollouts canary progression**
-   - 10% → 50% → 100%
-5. **Argo Rollouts rollback**
-   - Failed analysis and restoration of the previous stable revision
-6. **Prometheus**
-   - Application metrics and recording/alerting rules
-7. **Grafana dashboard**
-   - Availability, error rate, p95 latency, request rate, HTTP 5xx, and Kubernetes replicas
-8. **Prometheus alert**
-   - `DevOpsDemoAPIHigh5xxRate`
-9. **Discord notification**
-   - Alert notification with all secrets/webhook URLs redacted
-10. **Loki**
-    - Trace-aware log query using a validated trace ID
-11. **Tempo**
-    - Trace for `/api/test-slow`
-12. **Tempo → Loki correlation**
-    - Trace view leading to the matching structured application log
-
-Screenshots should never expose:
-
-- AWS credentials
-- IAM secrets
-- Kubernetes Secret values
-- Discord webhook URLs
-- Access tokens
-- Private keys
-- Other sensitive configuration
-
-No screenshot links are included until the corresponding image files are intentionally committed to the repository.
-
----
-
 ## Remaining Enhancements
 
 The completed project milestone does not require another major platform phase.
