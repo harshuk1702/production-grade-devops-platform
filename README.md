@@ -1,16 +1,152 @@
-﻿# Production-Grade DevOps Platform
+# Production-Grade DevOps Platform
 
-A hands-on DevOps project focused on building a reliable application delivery platform using containerization, automated testing, CI/CD, Kubernetes, security scanning, observability, reliability engineering, centralized logging, distributed tracing, and progressive delivery.
+A production-oriented DevOps platform demonstrating an end-to-end software delivery and reliability workflow across application development, CI/CD, container security, Kubernetes, progressive delivery, observability, SLOs, centralized logging, distributed tracing, and automated failure recovery.
 
-The platform is being built incrementally. Each stage is implemented, tested, validated, documented, and committed to Git.
+The project was built incrementally. Each major capability was implemented, tested, validated, documented, and committed to Git, with the final platform deployed and validated on Amazon EKS before the AWS environment was intentionally decommissioned to avoid ongoing infrastructure costs.
+
+---
+
+## Project Goal
+
+Build and validate a production-oriented DevOps platform that automates application delivery from source code through testing, containerization, security scanning, Kubernetes deployment, progressive delivery, observability, reliability monitoring, and automated failure recovery.
+
+The end-to-end engineering flow is:
+
+```text
+Code
+  ↓
+CI
+  ↓
+Test
+  ↓
+Build
+  ↓
+Security Scan
+  ↓
+Registry
+  ↓
+Kubernetes
+  ↓
+Canary
+  ↓
+Automated Analysis
+  ↓
+Promotion / Rollback
+  ↓
+Metrics + Logs + Traces
+  ↓
+SLOs + Alerting
+```
+
+The project intentionally demonstrates not only deployment, but also the operational controls required to determine whether a deployment is healthy, promote it safely, and recover automatically when validation fails.
+
+---
+
+## Project Outcome
+
+The project goal was achieved.
+
+The implementation was deployed and validated on Amazon EKS, including:
+
+- CI/CD through GitHub Actions
+- Docker image build and validation
+- Trivy container security scanning
+- Kubernetes manifest validation
+- Amazon ECR integration
+- Immutable Git commit-SHA image deployment
+- Argo Rollouts progressive canary delivery
+- Stable/canary traffic management
+- Prometheus-based automated canary analysis
+- Automated promotion
+- Automated rollback validation
+- Application and Kubernetes monitoring
+- SLO and error-budget monitoring
+- Alertmanager routing
+- Discord notifications
+- Centralized logging with Grafana Loki and Alloy
+- Distributed tracing with OpenTelemetry and Grafana Tempo
+- Tempo-to-Loki trace-to-log correlation
+
+The AWS environment was intentionally decommissioned after successful validation to avoid ongoing infrastructure costs. The implementation, Kubernetes configuration, CI/CD workflow, IAM configuration artifacts, validation procedures, and evidence remain preserved in the repository.
+
+---
+
+## Results at a Glance
+
+The following results summarize the measurable outcomes obtained during implementation and remote validation.
+
+| Engineering Area | Before / Baseline | Implemented Result |
+|---|---|---|
+| Progressive delivery | Conventional deployment model | **3-stage canary: 10% → 50% → 100%** |
+| Canary validation | Manual judgement | **Automated Prometheus AnalysisTemplate with ≥95% success-rate threshold** |
+| Failure recovery | Manual rollback path | **Automated rollback validated after failed canary analysis** |
+| Kubernetes availability | No production-style remote validation | **2/2 replicas Ready and Available during final validation** |
+| Application availability SLI | No quantified platform SLI | **1.0 / 100% availability observed during validation query** |
+| HTTP error rate | No SLO-grade error measurement | **0% error rate observed during validation** |
+| Prometheus rules | No platform-wide rule evaluation | **10 validated rules: 6 alerting + 4 recording rules** |
+| Rule evaluation | No centralized evaluation cadence | **30-second evaluation interval** |
+| Observability signals | Application-level visibility only | **3 pillars: metrics + logs + traces** |
+| Log collection | Pod-local logs | **Kubernetes Pods → Alloy → Loki → Grafana** |
+| Distributed tracing | No trace backend | **OpenTelemetry → Tempo → Grafana** |
+| Trace/log investigation | Separate signals | **Validated Tempo trace ID ↔ Loki application log correlation** |
+| Production deployment workflow | Local-only execution | **GitHub Actions → ECR → EKS → Argo Rollouts** |
+| Immutable deployment identity | Mutable image versioning risk | **Git commit SHA used as deployment image tag** |
+| Remote cluster | No cloud validation | **Amazon EKS Kubernetes 1.33 validated** |
+| Worker capacity | No managed remote nodes | **2 × t3.small managed worker nodes during validation** |
+| Node storage | No remote persistent worker footprint | **20 GiB gp3 per worker node during validation** |
+| Final production workflow | No measured end-to-end timing | **4m31s validated workflow: 1m23s tests + 3m01s deployment** |
+| AWS lifecycle | Running infrastructure would incur ongoing cost | **Validated, then intentionally decommissioned** |
+
+### What Changed from Baseline to Result
+
+The project was deliberately evolved from basic application delivery into a production-oriented operating model:
+
+```text
+Basic Application
+      |
+      v
+Automated Tests
+      |
+      v
+Containerized Application
+      |
+      v
+Security Scanning
+      |
+      v
+Kubernetes Deployment
+      |
+      v
+Progressive Canary Delivery
+      |
+      v
+Automated Health Analysis
+      |
+      +------------------+
+      |                  |
+     PASS               FAIL
+      |                  |
+      v                  v
+Promotion             Rollback
+      |                  |
+      +---------+--------+
+                |
+                v
+       Metrics + Logs + Traces
+                |
+                v
+         SLOs + Alerting
+```
+
+This progression is important because the project outcome is not simply "an application running on Kubernetes"; it demonstrates controlled delivery, measurable reliability, operational visibility, and automated recovery.
 
 ---
 
 ## Current Status
 
-The application delivery platform, containerization, CI/CD, security, Kubernetes deployment, application metrics, Prometheus monitoring, Grafana dashboards, Kubernetes-level observability, Prometheus alerting, Alertmanager routing, Discord notifications, SLO-based reliability monitoring, centralized logging, and distributed tracing have been implemented and validated.
+The application was deployed and validated on Amazon EKS during Phase 7. The AWS environment was intentionally decommissioned after successful validation to avoid ongoing infrastructure costs. The deployment configuration and validation evidence remain preserved in the repository.
 
-The current Kubernetes deployment is healthy with:
+### Validated EKS State Before Decommissioning
 
 ```text
 Rollout: devops-demo-api
@@ -20,14 +156,14 @@ Ready: 2/2
 Available: 2
 ```
 
-The Rollout uses an immutable commit-SHA container image and an Argo Rollouts canary strategy with:
+The validated Rollout used an immutable Git commit-SHA image and an Argo Rollouts canary strategy with:
 
 ```text
 maxUnavailable: 0
 maxSurge: 1
 ```
 
-### Implemented
+### Completed Platform Capabilities
 
 - FastAPI application
 - Automated API tests with Pytest
@@ -46,186 +182,33 @@ maxSurge: 1
 - 10% → 50% → 100% progressive delivery
 - Prometheus-based canary analysis
 - Automated promotion and rollback
-- Readiness probe
-- Liveness probe
+- Readiness and liveness probes
 - CPU and memory resource requests and limits
-- Kubernetes container security context
+- Kubernetes security context
 - Application Prometheus metrics
-- Prometheus scraping configuration
+- Prometheus scraping
 - PrometheusRule alerting
-- Alertmanager configuration
-- Discord alert notifications
-- AlertmanagerConfig selection using Kubernetes labels
-- AlertmanagerConfig namespace selection
-- Persistent Alertmanager configuration through Helm values
+- Alertmanager routing
+- Discord alert and recovery notifications
 - SLO recording rules
 - Availability and error-rate SLIs
 - Error-budget calculation
-- Error-budget burn-rate alerting
-- SLO violation alerting
+- Burn-rate monitoring
 - Loki centralized logging
 - Grafana Alloy log collection
-- Grafana Loki datasource
-- Kubernetes pod log collection and visualization
 - OpenTelemetry instrumentation
-- OpenTelemetry OTLP trace export
-- Tempo distributed tracing backend
-- Grafana Tempo datasource
-- Trace visualization in Grafana
-- Trace IDs in structured application logs
-- Span IDs in structured application logs
-- Trace-aware Kubernetes application logging
-- Trace validation through Kubernetes traffic
-- Trace validation through Grafana Tempo
-- Trace ID validation through Loki queries
-- Tempo-to-Loki trace-to-logs configuration
+- Tempo distributed tracing
+- Trace IDs and span IDs in structured logs
+- Tempo-to-Loki trace-to-log correlation
 
-### Implemented Observability
+### Remaining Enhancements
 
-- Grafana dashboards
-- Kubernetes-level observability
-- kube-state-metrics
-- node-exporter
-- Application request metrics
-- Application latency metrics
-- HTTP 5xx error monitoring
-- Application availability monitoring
-- Application latency monitoring
-- Application latency alerting
-- CPU monitoring and alerting
-- Memory monitoring and alerting
-- PrometheusRule alerting
-- Alertmanager routing
-- Discord alert notifications
-- Alert recovery notifications
-- Service-level objectives (SLOs)
-- Availability SLI
-- Error-rate SLI
-- Error-budget calculation
-- Error-budget burn-rate monitoring
-- SLO violation alerting
-- Centralized Kubernetes pod logging
-- Loki log storage
-- Grafana Alloy log collection
-- Grafana Explore log querying
-- OpenTelemetry instrumentation
-- Distributed tracing
-- Tempo trace storage and querying
-- Grafana trace visualization
-- Trace ID and span ID application logging
-- Trace-to-log correlation from Tempo to Loki
+The project milestone is complete. The remaining enhancements are limited to:
 
-### Implemented Reliability Engineering
+- Production configuration and secrets management
+- Loki derived fields for direct log-to-trace navigation
 
-- Service-level objectives (SLOs)
-- Availability SLI
-- Error-rate SLI
-- SLO recording rules
-- Error-budget calculation
-- Error-budget burn-rate alerting
-- SLO violation alerting
-- SLO validation through Prometheus queries
-- Reliability monitoring based on application request metrics
-
-### Implemented Centralized Logging
-
-- Grafana Loki
-- Grafana Alloy
-- Kubernetes pod log discovery
-- Kubernetes pod log relabeling
-- Centralized log ingestion
-- Grafana Loki datasource
-- Grafana Explore log querying
-- Structured JSON application logs
-- Trace ID logging
-- Span ID logging
-- End-to-end log validation from Kubernetes pod to Grafana
-
-The validated logging flow is:
-
-```text
-Kubernetes Pod
-      |
-      v
-Grafana Alloy
-      |
-      v
-Grafana Loki
-      |
-      v
-Grafana Explore
-```
-
-### Implemented Distributed Tracing
-
-- OpenTelemetry SDK and instrumentation
-- FastAPI OpenTelemetry instrumentation
-- OTLP HTTP trace export
-- Tempo trace backend
-- Tempo OTLP ingestion
-- Grafana Tempo datasource
-- Grafana trace exploration
-- Trace ID generation and propagation
-- Span ID generation and propagation
-- Trace IDs included in structured application logs
-- Trace IDs queryable in Loki
-- Trace visualization validated through Grafana
-- Tempo-to-Loki trace-to-logs configuration
-
-The validated tracing flow is:
-
-```text
-FastAPI Application
-        |
-        v
-OpenTelemetry Instrumentation
-        |
-        v
-OTLP HTTP Export
-        |
-        v
-Grafana Tempo
-        |
-        v
-Grafana
-```
-
-The trace and log correlation flow is:
-
-```text
-FastAPI Request
-      |
-      +----------------------+
-      |                      |
-      v                      v
-OpenTelemetry           Structured Log
-      |                      |
-      v                      v
-    Tempo                  Alloy
-      |                      |
-      |                      v
-      |                    Loki
-      |                      |
-      +----------+-----------+
-                 |
-                 v
-              Grafana
-```
-
-The application logs contain the active OpenTelemetry trace context:
-
-```text
-trace_id
-span_id
-```
-
-A validated trace can therefore be used to locate the corresponding application log entry in Loki.
-
-### Planned
-
-- Bidirectional Loki-to-Tempo trace navigation using Loki derived fields
-- Remote/cloud Kubernetes deployment
-- Production-scale configuration management
+These are future hardening/enhancement items rather than missing validation of the completed project milestone.
 
 ---
 
@@ -233,7 +216,7 @@ A validated trace can therefore be used to locate the corresponding application 
 
 ### Current Architecture
 
-The current platform implements the application delivery pipeline together with progressive delivery, metrics, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing.
+The validated platform implemented the application delivery pipeline together with progressive delivery, metrics, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing.
 
 ```text
 Developer
@@ -349,7 +332,7 @@ OpenTelemetry
         v
 Grafana Trace View
 ```
-The current architecture represents components that have been implemented and validated.
+The architecture below represents components that were implemented and validated during the project.
 
 ---
 
@@ -777,7 +760,7 @@ Controlled Application Traffic
 
 ## Target Architecture
 
-The target architecture builds on the implemented platform capabilities, including distributed tracing, progressive delivery, centralized observability, SLO-driven operations, and automated rollback, with remote/cloud Kubernetes and production-scale configuration remaining as future stages.
+The target architecture builds on the implemented platform capabilities, including distributed tracing, progressive delivery, centralized observability, SLO-driven operations, automated promotion, and automated rollback. The remote/cloud Kubernetes stage was subsequently implemented and validated on Amazon EKS.
 
 ```text
 Developer
@@ -2857,7 +2840,7 @@ The application uses **Argo Rollouts** to implement progressive canary delivery 
 
 The rollout strategy is:
 
-`	ext
+```text
 Current Stable Revision
           |
           v
@@ -2883,11 +2866,11 @@ Current Stable Revision
           |
           v
    New Revision Stable
-`
+```
 
 Traffic is controlled through dedicated Kubernetes Services and NGINX Ingress routing:
 
-`	ext
+```text
                     NGINX Ingress
                          |
               +----------+----------+
@@ -2897,13 +2880,13 @@ Traffic is controlled through dedicated Kubernetes Services and NGINX Ingress ro
               |                     |
               v                     v
        Stable Pods            Canary Pods
-`
+```
 
 The Rollout automatically evaluates the canary using the Prometheus AnalysisTemplate:
 
-`	ext
+```text
 HTTP Success Rate >= 0.95
-`
+```
 
 The analysis runs at the 10% and 50% stages. If the success-rate analysis fails, the Rollout enters a degraded state and the previous stable revision remains available.
 
@@ -2911,88 +2894,100 @@ A successful rollout automatically promotes the canary to 100% and makes the new
 
 The Rollout can be inspected using:
 
-`powershell
+```powershell
 kubectl get rollout devops-demo-api
 kubectl argo rollouts get rollout devops-demo-api
-`
+```
 
 A live rollout can be watched using:
 
-`powershell
+```powershell
 kubectl argo rollouts get rollout devops-demo-api --watch
-`
+```
 
 AnalysisRuns can be inspected using:
 
-`powershell
+```powershell
 kubectl get analysisruns
-`
+```
 
 The Prometheus AnalysisTemplate is managed as Kubernetes configuration in:
 
-`	ext
+```text
 k8s/analysis-template.yaml
-`
+```
 
 The production success-rate threshold is:
 
-`	ext
+```text
 >= 0.95
-`
+```
 
 This provides controlled progressive delivery with automated validation, promotion, and rollback behavior.
 
 ## Repository Structure
 
+The repository is organized around the application, CI/CD workflow, Kubernetes configuration, observability configuration, and AWS deployment configuration.
+
 ```text
 production-grade-devops-platform/
-|
-â”œâ”€â”€ .github/
-â”‚   â””â”€â”€ workflows/
-â”‚       â””â”€â”€ ci.yml
-â”‚
-â”œâ”€â”€ application/
-â”‚   â”œâ”€â”€ app/
-â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â””â”€â”€ main.py
-â”‚   â”‚
-â”‚   â”œâ”€â”€ tests/
-â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â””â”€â”€ test_api.py
-â”‚   â”‚
-â”‚   â”œâ”€â”€ Dockerfile
-â”‚   â”œâ”€â”€ pytest.ini
-â”‚   â””â”€â”€ requirements.txt
-â”‚
-â”œâ”€â”€ docs/
-â”‚
-â”œâ”€â”€ k8s/
-â”‚   â”œâ”€â”€ alertmanagerconfig.yaml
-â”‚   â”œâ”€â”€ alloy-values.yaml
-â”‚   â”œâ”€â”€ deployment.yaml
-â”‚   â”œâ”€â”€ monitoring-values.yaml
-â”‚   â”œâ”€â”€ prometheusrule.yaml
-â”‚   â”œâ”€â”€ service.yaml
-â”‚   â””â”€â”€ tempo-values.yaml
-â”‚
-â”œâ”€â”€ scripts/
-â”‚
-â”œâ”€â”€ .gitignore
-â””â”€â”€ README.md
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── application/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   └── main.py
+│   │
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   └── test_api.py
+│   │
+│   ├── Dockerfile
+│   ├── pytest.ini
+│   └── requirements.txt
+│
+├── k8s/
+│   ├── alertmanagerconfig.yaml
+│   ├── alloy-values.yaml
+│   ├── analysis-template.yaml
+│   ├── github-actions-rbac.yaml
+│   ├── grafana-values.yaml
+│   ├── ingress.yaml
+│   ├── loki-values.yaml
+│   ├── monitoring-values.yaml
+│   ├── prometheus-standalone-rules.yaml
+│   ├── prometheus-standalone-values.yaml
+│   ├── prometheusrule.yaml
+│   ├── rollout.yaml
+│   ├── service-canary.yaml
+│   ├── service-stable.yaml
+│   ├── service.yaml
+│   └── tempo-values.yaml
+│
+├── scripts/
+│
+├── .gitignore
+├── eksctl-cluster.yaml
+├── github-actions-ecr-policy.json
+├── github-actions-eks-policy.json
+├── github-actions-trust-policy.json
+└── README.md
 ```
 
----
+The repository preserves the deployment and validation configuration even though the live AWS environment was intentionally decommissioned after successful validation.
 
 ## Implementation Roadmap
 
-### Phase 1 â€” Application Foundation
+### Phase 1 — Application Foundation
 
 - [x] FastAPI application
 - [x] Health endpoint
 - [x] API endpoints
 - [x] Automated tests
 
-### Phase 2 â€” Containerization
+### Phase 2 — Containerization
 
 - [x] Dockerfile
 - [x] Docker image
@@ -3001,7 +2996,7 @@ production-grade-devops-platform/
 - [x] Container validation
 - [x] Container security hardening
 
-### Phase 3 â€” CI/CD
+### Phase 3 — CI/CD
 
 - [x] GitHub Actions
 - [x] Automated test pipeline
@@ -3011,7 +3006,7 @@ production-grade-devops-platform/
 - [x] Amazon ECR
 - [x] Commit-SHA image tagging
 
-### Phase 4 â€” Kubernetes
+### Phase 4 — Kubernetes
 
 - [x] Argo Rollouts
 - [x] Stable and canary Services
@@ -3021,9 +3016,9 @@ production-grade-devops-platform/
 - [x] Resource requests and limits
 - [x] Kubernetes security context
 - [x] Canary rollout strategy
-- [ ] ConfigMap / application Secrets
+- [ ] Production configuration management
 
-### Phase 5 â€” Observability and Reliability
+### Phase 5 — Observability and Reliability
 
 - [x] Application metrics
 - [x] Prometheus
@@ -3060,16 +3055,24 @@ production-grade-devops-platform/
 - [x] Tempo-to-Loki trace-to-log correlation
 - [ ] Loki derived fields for direct log-to-trace navigation
 
-### Phase 6 â€” Progressive Delivery
+## Phase 6 — Progressive Delivery
 
 - [x] Stable deployment
 - [x] Canary deployment
 - [x] Traffic management
-- [x] Canary validation with Prometheus AnalysisTemplate
+- [x] Canary validation
 - [x] Automated promotion
-- [x] Automated rollback validation
+- [x] Automated rollback
 
-### Phase 7 — Cloud / Remote Kubernetes
+Validated flows:
+
+```text
+Stable → Canary → Analysis → Promotion
+
+Stable → Canary → Failed Analysis → Rollback
+```
+
+## Phase 7 — Cloud / Remote Kubernetes
 
 - [x] Remote Kubernetes cluster with Amazon EKS
 - [x] Amazon ECR container registry integration
@@ -3103,388 +3106,745 @@ This approach keeps each stage reproducible and provides a clear Git history of 
 
 ---
 
-## Current Milestone
+---
 
-The application delivery platform, Kubernetes deployment, monitoring, alerting, reliability engineering, centralized logging, and distributed tracing foundation are complete.
+## Validation Evidence
 
-The platform currently demonstrates:
+The platform was validated locally and on Amazon EKS before the AWS environment was intentionally decommissioned.
+
+Validation covered:
+
+- CI pipeline success
+- Docker image build
+- Trivy security scanning
+- Kubernetes manifest validation
+- EKS cluster deployment
+- Managed worker node validation
+- External application access
+- Immutable image verification
+- Argo Rollouts canary progression
+- Prometheus canary analysis
+- Automated promotion
+- Failed canary rollback
+- Prometheus metrics and recording rules
+- Prometheus alerting
+- Alertmanager routing
+- Discord notifications
+- Alert recovery notifications
+- SLO and error-budget evaluation
+- Loki centralized logging
+- Grafana Alloy collection
+- Tempo distributed tracing
+- Tempo-to-Loki trace correlation
+
+### CI/CD Validation Result
+
+The final validated production workflow completed in approximately:
+
+```text
+Total workflow:       4m 31s
+Test stage:           1m 23s
+Deployment stage:     3m 01s
+```
+
+The workflow validated the expected sequence:
+
+```text
+GitHub Actions
+      |
+      v
+Tests
+      |
+      v
+Docker Build
+      |
+      v
+Trivy Scan
+      |
+      v
+Kubernetes Manifest Validation
+      |
+      v
+Amazon ECR
+      |
+      v
+Amazon EKS
+      |
+      v
+Argo Rollouts
+      |
+      v
+Health / Rollout Verification
+```
+
+The deployment verification checked the expected image, rollout generation, and Healthy rollout state before the production deployment workflow succeeded.
+
+### Kubernetes Validation Result
+
+The validated EKS environment used:
+
+```text
+Kubernetes version: 1.33
+Managed worker nodes: 2
+Instance type: t3.small
+Node volume: 20 GiB gp3
+Application replicas: 2
+```
+
+The final application state before AWS decommissioning was:
+
+```text
+Desired replicas:    2
+Available replicas:  2
+Ready replicas:      2
+```
+
+A controlled recovery test also demonstrated that the application could be scaled from:
+
+```text
+2 replicas
+    ↓
+0 replicas
+    ↓
+0 running application pods
+    ↓
+scale back to 2
+    ↓
+2/2 replicas available
+```
+
+This validated the Kubernetes recovery path and confirmed that the application returned to the expected healthy state.
+
+### Progressive Delivery Results
+
+The production Rollout used:
+
+```text
+10% Canary
+   ↓
+Prometheus Analysis
+   ↓
+50% Canary
+   ↓
+Prometheus Analysis
+   ↓
+100% Promotion
+```
+
+The production success-rate analysis threshold was:
+
+```text
+HTTP success rate >= 0.95
+```
+
+The successful flow was validated as:
+
+```text
+Stable
+  ↓
+Canary 10%
+  ↓
+Analysis PASS
+  ↓
+Canary 50%
+  ↓
+Analysis PASS
+  ↓
+Canary 100%
+  ↓
+New revision becomes Stable
+```
+
+A separate failure-path validation intentionally caused the canary analysis to fail.
+
+The observed recovery flow was:
+
+```text
+Stable
+  ↓
+Canary
+  ↓
+Analysis FAIL
+  ↓
+Rollout Degraded
+  ↓
+Failed canary scaled down
+  ↓
+Previous Stable Revision retained
+```
+
+This demonstrated that progressive delivery was not only configured but exercised through both the success and failure paths.
+
+### Prometheus Validation Results
+
+The production Prometheus rules were validated using `promtool`.
+
+Measured rule inventory:
+
+```text
+Total rules:          10
+Alerting rules:        6
+Recording rules:       4
+Evaluation interval:  30s
+```
+
+The validated Prometheus stack exposed application and Kubernetes signals for:
+
+- Request rate
+- HTTP status codes
+- HTTP 5xx rate
+- Request latency
+- Application availability
+- CPU utilization
+- Memory utilization
+- Replica state
+- SLOs
+- Error budgets
+- Burn-rate conditions
+
+The validation query results included:
+
+```text
+Availability SLI: 1.0
+Error rate:        0
+```
+
+These values represent the observed healthy validation period, not a permanent production guarantee.
+
+### Alerting Validation
+
+The alerting chain was validated end-to-end:
 
 ```text
 Application
-
-    +
-
-Testing
-
-    +
-
-Containerization
-
-    +
-
-Container Security
-
-    +
-
-CI/CD
-
-    +
-
-Vulnerability Scanning
-
-    +
-
-Container Registry
-
-    +
-
-Kubernetes
-
-    +
-
-Progressive Canary Delivery
-
-    +
-
-Health Checks
-
-    +
-
-Application Metrics
-
-    +
-
-Kubernetes Metrics
-
-    +
-
-Prometheus
-
-    +
-
-Grafana
-
-    +
-
-PrometheusRule
-
-    +
-
+    ↓
+Prometheus Metrics
+    ↓
+Prometheus Rule
+    ↓
 Alertmanager
+    ↓
+Discord
+```
 
-    +
+Validated alerting capabilities included:
 
-Discord Notifications
+- High HTTP 5xx rate
+- High latency
+- Application availability failure
+- High CPU
+- High memory
+- SLO-based violations
+- Error-budget burn-rate conditions
+- Recovery notifications
 
-    +
+The `DevOpsDemoAPIHigh5xxRate` alert was specifically validated as part of the alerting workflow.
 
-Alert Recovery
+### Logging Validation
 
-    +
+The centralized logging path was validated as:
 
-Service-Level Objectives
-
-    +
-
-Availability / Error-Rate SLIs
-
-    +
-
-Error Budgets
-
-    +
-
-Burn-Rate Monitoring
-
-    +
-
-SLO-Based Alerting
-
-    +
-
-Grafana Loki
-
-    +
-
+```text
+Kubernetes Pod
+      ↓
 Grafana Alloy
+      ↓
+Grafana Loki
+      ↓
+Grafana Explore
+```
 
-    +
+Structured application logs included:
 
-Centralized Kubernetes Logging
+```text
+timestamp
+level
+service
+message
+trace_id
+span_id
+method
+path
+status
+duration_seconds
+```
 
-    +
+This made application requests searchable through Loki while preserving the distributed trace context required for cross-signal investigation.
 
+### Distributed Tracing Validation
+
+The tracing path was validated as:
+
+```text
+FastAPI
+   ↓
 OpenTelemetry
-
-    +
-
-Distributed Tracing
-
-    +
-
+   ↓
+OTLP HTTP
+   ↓
 Grafana Tempo
-
-    +
-
-Trace IDs
-
-    +
-
-Span IDs
-
-    +
-
-Trace Visualization
-
-    +
-
-Trace-to-Log Correlation
+   ↓
+Grafana Trace View
 ```
 
-The current Kubernetes deployment has also been validated after controlled scaling:
+The application generated and propagated:
 
 ```text
-Rollout: devops-demo-api
-
-Initial state:
-
-2/2 replicas available
-
-Controlled test:
-
-scaled to 0 replicas
-
-Observed:
-
-0/0 replicas
-
-No application pods
-
-Recovery:
-
-scaled back to 2 replicas
-
-Final state:
-
-2/2 replicas available
-
-2/2 pods running
+trace_id
+span_id
 ```
 
-Prometheus successfully exposes the Kubernetes deployment state through:
+A validated Tempo trace ID was:
 
 ```text
-kube_deployment_status_replicas_available
-
-kube_deployment_spec_replicas
+71a58631de41b0fcb159ab9cc399e3f7
 ```
 
-The final healthy state is:
+The corresponding Loki application log contained the same trace context, demonstrating cross-signal correlation.
+
+### Tempo-to-Loki Correlation Result
+
+The validated investigation workflow was:
 
 ```text
-Available replicas: 2
-
-Desired replicas: 2
+Tempo Trace
+    ↓
+trace_id
+    ↓
+Loki Query
+    ↓
+Matching Application Log
 ```
 
-The platform has progressed beyond basic application monitoring into a broader observability and reliability foundation covering:
+This allowed the same request to be followed across:
 
 ```text
-Application
-    |
-    +----------------------+----------------------+----------------------+
-    |                      |                      |
-    v                      v                      v
-Application Metrics   Kubernetes Metrics    Kubernetes Logs
-    |                      |                      |
-    |                      |                      v
-    |                      |                 Grafana Alloy
-    |                      |                      |
-    |                      |                      v
-    |                      |                     Loki
-    |                      |                      |
-    |                      |                      |
-    |                      |                      v
-    |                      |               Grafana Explore
-    |                      |
-    +----------+-----------+
-               |
-               v
-           Prometheus
-               |
-         +-----+-----+
-         |           |
-         v           v
-      Grafana     Alerting
-         |           |
-         |           v
-         |      Alertmanager
-         |           |
-         |           v
-         |        Discord
-         |
-         +----------------------+
-                                |
-                                v
-                       Application Traces
-                                |
-                                v
-                         OpenTelemetry
-                                |
-                                v
-                              Tempo
-                                |
-                                v
-                         Grafana Traces
+Request
+  ↓
+Trace
+  ↓
+Span
+  ↓
+Structured Log
 ```
 
-The project has now established a complete baseline for:
-
-```text
-Metrics
-
-    +
-
-Dashboards
-
-    +
-
-Alerting
-
-    +
-
-Notifications
-
-    +
-
-SLOs
-
-    +
-
-Error Budgets
-
-    +
-
-Reliability Monitoring
-
-    +
-
-Centralized Logging
-
-    +
-
-Distributed Tracing
-
-    +
-
-Trace-to-Log Correlation
-```
-
-The platform has therefore progressed from basic monitoring into a three-pillar observability model:
-
-```text
-              Observability
-                    |
-        +-----------+-----------+
-        |           |           |
-        v           v           v
-     Metrics      Logs       Traces
-        |           |           |
-        v           v           v
-   Prometheus     Loki       Tempo
-        |           |           |
-        +-----------+-----------+
-                    |
-                    v
-                 Grafana
-```
-
-The remote/cloud Kubernetes deployment is now implemented and validated on Amazon EKS.
+The implementation therefore moved beyond isolated metrics, logs, and traces into practical observability correlation.
 
 ---
 
-## Current Status
+## Engineering Results: Before → After
 
-The project has progressed beyond the original local Kubernetes milestone and now includes a production-style remote deployment workflow.
+The project can be summarized as a sequence of engineering improvements rather than a list of technologies.
 
-### Phase 7 — Remote/Cloud Kubernetes Deployment — Implemented
+### Delivery
 
-The application was deployed to an Amazon EKS cluster in AWS and validated as an integrated remote implementation of the existing Kubernetes and progressive-delivery architecture.
+**Before**
 
-Implemented and validated:
+```text
+Application code
+    ↓
+Manual validation
+    ↓
+Manual deployment
+```
 
-- Amazon EKS cluster deployment
-- Managed EC2 worker nodes
-- Production Kubernetes access configuration
-- GitHub Actions OIDC authentication with AWS IAM
-- Least-privilege ECR image publishing permissions
-- EKS cluster access through AWS IAM and Kubernetes RBAC
-- Amazon ECR as the production container registry
-- GitHub Actions CI/CD integration with EKS
-- Immutable production image tagging using Git commit SHA
-- External NGINX ingress and production application access
-- Argo Rollouts progressive delivery on EKS
-- Stable and canary Services
-- Prometheus-based canary analysis
-- Automated promotion
-- Automated rollback validation
-- Prometheus monitoring and SLO alerting
-- Centralized logging with Loki and Grafana Alloy
-- Distributed tracing with Grafana Tempo
-- Grafana dashboards and observability data sources
-- Trace correlation between Tempo and Loki
-- Remote production health and endpoint validation
+**After**
 
-### Production Validation
+```text
+Git commit
+    ↓
+GitHub Actions
+    ↓
+Automated tests
+    ↓
+Docker build
+    ↓
+Trivy scan
+    ↓
+Kubernetes validation
+    ↓
+Amazon ECR
+    ↓
+Amazon EKS
+```
 
-The remote deployment has been validated end-to-end:
+### Deployment Safety
 
-`       GitHub Actions
-              |
-              v
-       Docker Build + Test
-              |
-              v
-       Trivy Security Scan
-              |
-              v
-          Amazon ECR
-              |
-              v
-       Amazon EKS Cluster
-              |
-              v
-       Argo Rollouts
-              |
-        +-----+-----+
-        |           |
-        v           v
-     Stable      Canary
-        |           |
-        +-----+-----+
-              |
-              v
-        Prometheus Analysis
-              |
-              v
-      Automated Promotion
-              |
-              v
-     Production Validation
-              |
-        +-----+-----+
-        |           |
-        v           v
-      Loki        Tempo
-        |           |
-        +-----+-----+
-              |
-              v
-           Grafana
-`
+**Before**
 
-The production deployment uses immutable Git commit SHA image tags and validates the expected image, rollout generation, and Healthy rollout state before the CI/CD workflow succeeds.
+```text
+New version
+    ↓
+Full rollout
+```
 
-The project now has a complete validated path from source control through container build, security scanning, ECR publishing, EKS deployment, progressive delivery, observability, and production verification.
+**After**
 
-The AWS environment was intentionally torn down after successful production validation to avoid ongoing infrastructure costs. The validated implementation, configuration, CI/CD workflow, and deployment evidence remain preserved in this repository.
+```text
+New version
+    ↓
+10% canary
+    ↓
+Automated analysis
+    ↓
+50% canary
+    ↓
+Automated analysis
+    ↓
+100% promotion
+```
+
+### Failure Recovery
+
+**Before**
+
+```text
+Deployment failure
+    ↓
+Operator investigation
+    ↓
+Manual rollback
+```
+
+**After**
+
+```text
+Deployment failure
+    ↓
+Prometheus analysis failure
+    ↓
+Rollout Degraded
+    ↓
+Canary removed
+    ↓
+Previous stable revision retained
+```
+
+### Observability
+
+**Before**
+
+```text
+Application logs + basic monitoring
+```
+
+**After**
+
+```text
+Metrics  → Prometheus → Grafana
+Logs     → Alloy → Loki → Grafana
+Traces   → OpenTelemetry → Tempo → Grafana
+                         ↘
+                          Loki correlation
+```
+
+### Reliability
+
+**Before**
+
+```text
+"Application appears healthy"
+```
+
+**After**
+
+```text
+Availability SLI
+      +
+Error-rate SLI
+      +
+Error budget
+      +
+Burn-rate monitoring
+      +
+SLO alerting
+```
+
+### Operational Result
+
+The final validated platform therefore provides:
+
+```text
+Automated Delivery
+        +
+Container Security
+        +
+Kubernetes Operations
+        +
+Progressive Delivery
+        +
+Automated Failure Recovery
+        +
+Metrics
+        +
+Logs
+        +
+Traces
+        +
+SLOs
+        +
+Alerting
+```
+
+This is the core production-oriented outcome of the project.
+
+---
+
+## AWS Deployment Lifecycle
+
+The AWS environment was intentionally used as a validation environment rather than left running indefinitely.
+
+### Deployment
+
+```text
+GitHub Actions
+      ↓
+Amazon ECR
+      ↓
+Amazon EKS
+      ↓
+Argo Rollouts
+      ↓
+Prometheus Analysis
+      ↓
+Promotion / Rollback
+      ↓
+External Validation
+```
+
+### Decommissioning
+
+After successful validation, the AWS resources were intentionally removed to prevent ongoing infrastructure charges.
+
+The decommissioning included:
+
+- Amazon EKS cluster
+- Managed worker nodes
+- EBS worker volumes
+- Load balancer resources
+- Public IPv4 allocations
+- ECR application repository
+- Project-specific GitHub Actions IAM role
+- IAM policies associated with the deployment role
+- GitHub Actions OIDC provider used by the project
+
+The final repository retains the configuration and evidence required to reproduce the deployment.
+
+### Important Project State
+
+The README intentionally does **not** claim that the application is currently running on AWS.
+
+The accurate project statement is:
+
+> **Deployed and validated on AWS EKS.**
+
+The live environment was subsequently decommissioned for cost control.
+
+---
+
+## Portfolio / Recruiter Summary
+
+This project demonstrates practical experience across:
+
+- Python / FastAPI
+- Docker
+- GitHub Actions
+- Trivy
+- Kubernetes
+- Amazon EKS
+- Amazon ECR
+- Argo Rollouts
+- NGINX Ingress
+- Prometheus
+- Grafana
+- Alertmanager
+- Discord alerting
+- SLOs and error budgets
+- Grafana Loki
+- Grafana Alloy
+- OpenTelemetry
+- Grafana Tempo
+- Distributed tracing
+- Trace-to-log correlation
+- Kubernetes reliability and recovery
+- Progressive delivery
+- Automated rollback
+
+The strongest evidence is not the technology list alone; it is the validated operational behaviour:
+
+```text
+10% → 50% → 100% canary delivery
+          +
+≥95% automated success-rate analysis
+          +
+Successful automated promotion
+          +
+Validated failed-analysis rollback
+          +
+2/2 healthy replicas
+          +
+0 observed HTTP error rate
+          +
+1.0 availability SLI
+          +
+10 Prometheus rules
+          +
+3 observability pillars
+          +
+4m31s validated production workflow
+```
+
+---
+
+## Evidence Screenshot Plan
+
+The recommended README evidence set is 8–12 high-value screenshots.
+
+1. **GitHub Actions CI**
+   - Successful test/build/scan workflow
+2. **Successful production deployment**
+   - GitHub Actions ECR/EKS deployment run
+3. **EKS deployment state**
+   - Nodes, Pods, Rollout, and Ready/Available replicas
+4. **Argo Rollouts canary progression**
+   - 10% → 50% → 100%
+5. **Argo Rollouts rollback**
+   - Failed analysis and restoration of the previous stable revision
+6. **Prometheus**
+   - Application metrics and recording/alerting rules
+7. **Grafana dashboard**
+   - Availability, error rate, p95 latency, request rate, HTTP 5xx, and Kubernetes replicas
+8. **Prometheus alert**
+   - `DevOpsDemoAPIHigh5xxRate`
+9. **Discord notification**
+   - Alert notification with all secrets/webhook URLs redacted
+10. **Loki**
+    - Trace-aware log query using a validated trace ID
+11. **Tempo**
+    - Trace for `/api/test-slow`
+12. **Tempo → Loki correlation**
+    - Trace view leading to the matching structured application log
+
+Screenshots should never expose:
+
+- AWS credentials
+- IAM secrets
+- Kubernetes Secret values
+- Discord webhook URLs
+- Access tokens
+- Private keys
+- Other sensitive configuration
+
+No screenshot links are included until the corresponding image files are intentionally committed to the repository.
+
+---
+
+## Remaining Enhancements
+
+The completed project milestone does not require another major platform phase.
+
+The remaining enhancements are:
+
+### 1. Production Configuration Management
+
+Introduce a production-grade configuration and secrets-management strategy, such as:
+
+- Kubernetes Secrets with stronger lifecycle controls
+- External secret management
+- Environment-specific configuration
+- Secret rotation
+- Configuration validation
+- Separation of development, staging, and production configuration
+
+### 2. Loki Derived Fields
+
+Add Loki derived fields so a trace ID in a log entry can be used directly to navigate into Tempo.
+
+Current validated capability:
+
+```text
+Tempo
+  ↓
+trace_id
+  ↓
+Loki
+  ↓
+Matching log
+```
+
+Future enhancement:
+
+```text
+Loki Log Entry
+      ↓
+Derived trace_id
+      ↓
+Direct Tempo Navigation
+```
+
+These enhancements improve production ergonomics and configuration hygiene but do not change the fact that the main platform milestone was successfully implemented and validated.
+
+---
+
+## Development Approach
+
+The platform was developed in small, verifiable stages.
+
+For each major change:
+
+1. Implement the change
+2. Run automated tests
+3. Build and validate the container
+4. Validate Kubernetes behaviour
+5. Measure relevant results
+6. Update the documentation
+7. Commit the change to Git
+8. Push the change to GitHub
+9. Verify GitHub Actions
+10. Validate monitoring and alerting where applicable
+11. Validate logging and tracing where applicable
+
+This approach kept each stage reproducible and created a clear Git history of the platform's evolution.
+
+The final implementation was deliberately validated before the AWS environment was decommissioned. This separates **technical validation** from **continuous infrastructure runtime**, allowing the repository to preserve the demonstrated engineering work without incurring unnecessary ongoing AWS costs.
+
+---
+
+## Final Project Status
+
+```text
+Phase 1  — Application Foundation          COMPLETE
+Phase 2  — Containerization                COMPLETE
+Phase 3  — CI/CD                           COMPLETE
+Phase 4  — Kubernetes                      COMPLETE
+Phase 5  — Observability & Reliability     COMPLETE
+Phase 6  — Progressive Delivery            COMPLETE
+Phase 7  — AWS / Remote Kubernetes         COMPLETE
+```
+
+### Final Outcome
+
+```text
+Production-Grade DevOps Platform
+             |
+             +-- Automated CI/CD
+             +-- Container Security
+             +-- Kubernetes
+             +-- Amazon EKS
+             +-- Amazon ECR
+             +-- Progressive Canary Delivery
+             +-- Automated Analysis
+             +-- Automated Rollback
+             +-- Prometheus
+             +-- Grafana
+             +-- Alertmanager
+             +-- SLOs / Error Budgets
+             +-- Loki / Alloy
+             +-- OpenTelemetry / Tempo
+             +-- Trace-to-Log Correlation
+             +-- Validated Recovery
+```
+
+The project demonstrates an end-to-end production-oriented DevOps workflow from source code to deployment, controlled release, observability, reliability measurement, and automated recovery.
+
+The AWS environment was intentionally decommissioned after validation. The repository remains the durable source of truth for the implementation, deployment configuration, CI/CD workflow, and validation evidence.
